@@ -1,0 +1,259 @@
+"use server";
+
+import { unlinkSync } from "node:fs";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { hasErrors, validatePost } from "@/lib/platforms";
+import { getPublisher } from "@/lib/publisher";
+import { approvePost, checkLowQueue, fillQueue, movePost, runDuePublishes, syncVideoStatus, unschedulePost } from "@/lib/services";
+import { currentUserId, loadDb, mutate, newId, nowIso, saveDb } from "@/lib/store";
+import { buildPostDraft } from "@/lib/templates";
+import { PLATFORMS, type Platform, type Post, type VideoStatus } from "@/lib/types";
+import { t } from "@/lib/i18n";
+import { zonedToUtc } from "@/lib/time";
+
+const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+const list = (s: string) => s.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+const back = (path: string, msg?: string, err = false) =>
+  redirect(msg ? `${path}${path.includes("?") ? "&" : "?"}${err ? "err" : "msg"}=${encodeURIComponent(msg)}` : path);
+
+function done(paths: string[]) {
+  paths.forEach((p) => revalidatePath(p));
+}
+
+/* ── Queue & publishing ─────────────────────── */
+
+export async function fillQueueAction() {
+  const n = mutate((db) => {
+    const created = fillQueue(db, currentUserId(), new Date());
+    checkLowQueue(db, currentUserId(), new Date());
+    return created;
+  });
+  done(["/", "/calendar"]);
+  back("/", t("dashboard.filled", { n }));
+}
+
+export async function runDueAction() {
+  const db = loadDb();
+  const res = await runDuePublishes(db, getPublisher(), new Date(), (v) => v.filePath ?? "");
+  checkLowQueue(db, currentUserId(), new Date());
+  saveDb(db);
+  done(["/", "/calendar", "/notifications"]);
+  back("/", t("dashboard.ran", { ok: res.filter((r) => r.ok).length, failed: res.filter((r) => !r.ok).length }));
+}
+
+export async function approveAction(f: FormData) {
+  const res = mutate((db) => approvePost(db, currentUserId(), str(f, "postId")));
+  done(["/", "/calendar"]);
+  const ret = str(f, "return") || "/";
+  back(ret, res.ok ? undefined : `Could not approve: ${res.reason}`, !res.ok);
+}
+
+export async function approveAllAction() {
+  const n = mutate((db) => {
+    const uid = currentUserId();
+    return db.posts.filter((p) => p.userId === uid && p.status === "proposed").reduce((acc, p) => acc + (approvePost(db, uid, p.id).ok ? 1 : 0), 0);
+  });
+  done(["/", "/calendar"]);
+  back("/", t("dashboard.approvedN", { n }));
+}
+
+export async function unscheduleAction(f: FormData) {
+  mutate((db) => unschedulePost(db, currentUserId(), str(f, "postId")));
+  done(["/", "/calendar"]);
+  back(str(f, "return") || "/");
+}
+
+/** Called from the calendar drag-and-drop (client). */
+export async function movePostAction(postId: string, scheduledAt: string) {
+  const ok = mutate((db) => movePost(db, currentUserId(), postId, new Date(scheduledAt).toISOString()));
+  done(["/", "/calendar"]);
+  return ok;
+}
+
+/* ── Videos ─────────────────────────────────── */
+
+export async function setVideoStatusAction(f: FormData) {
+  const id = str(f, "videoId");
+  const status = str(f, "status") as VideoStatus;
+  mutate((db) => {
+    const v = db.videos.find((x) => x.id === id && x.userId === currentUserId());
+    if (!v || !["draft", "ready"].includes(status)) return;
+    v.status = status;
+    if (status === "draft") {
+      db.posts.filter((p) => p.videoId === id && (p.status === "proposed" || p.status === "scheduled")).forEach((p) => (p.status = "cancelled"));
+    }
+  });
+  done(["/library", `/videos/${id}`]);
+  back(str(f, "return") || "/library");
+}
+
+export async function updateVideoAction(f: FormData) {
+  const id = str(f, "videoId");
+  mutate((db) => {
+    const v = db.videos.find((x) => x.id === id && x.userId === currentUserId());
+    if (!v) return;
+    v.title = str(f, "title");
+    v.description = str(f, "description");
+    v.formatTags = list(str(f, "formatTags"));
+    const exp = str(f, "expiresAt");
+    v.expiresAt = exp ? new Date(`${exp}T23:59:59`).toISOString() : undefined;
+    const ch = str(f, "channelId");
+    if (ch && db.channels.some((c) => c.id === ch && c.userId === v.userId)) v.channelId = ch;
+  });
+  done(["/library", `/videos/${id}`]);
+  back(`/videos/${id}`, "Saved.");
+}
+
+export async function deleteVideoAction(f: FormData) {
+  const id = str(f, "videoId");
+  mutate((db) => {
+    const v = db.videos.find((x) => x.id === id && x.userId === currentUserId());
+    if (!v) return;
+    if (v.filePath && !v.filePath.startsWith("demo://")) {
+      try { unlinkSync(v.filePath); } catch { /* already gone */ }
+    }
+    db.videos = db.videos.filter((x) => x.id !== id);
+    db.posts = db.posts.filter((p) => p.videoId !== id || p.status === "published");
+  });
+  done(["/library", "/calendar", "/"]);
+  back("/library");
+}
+
+/** Manually create a platform version (outside the queue). */
+export async function createPostAction(f: FormData) {
+  const id = str(f, "videoId");
+  const platform = str(f, "platform") as Platform;
+  mutate((db) => {
+    const uid = currentUserId();
+    const v = db.videos.find((x) => x.id === id && x.userId === uid);
+    if (!v || !PLATFORMS.includes(platform)) return;
+    const tpl = db.templates.find((x) => x.userId === uid && x.channelId === v.channelId && x.platform === platform);
+    db.posts.push({
+      id: newId(), userId: uid, createdAt: nowIso(), videoId: v.id, channelId: v.channelId, platform,
+      ...buildPostDraft(v, platform, tpl), status: "proposed", attempts: 0,
+    });
+  });
+  done([`/videos/${id}`]);
+  back(`/videos/${id}`);
+}
+
+export async function updatePostAction(f: FormData) {
+  const postId = str(f, "postId");
+  let videoId = "";
+  let invalid = false;
+  mutate((db) => {
+    const uid = currentUserId();
+    const p = db.posts.find((x) => x.id === postId && x.userId === uid);
+    if (!p || !["proposed", "scheduled", "failed"].includes(p.status)) return;
+    videoId = p.videoId;
+    const channel = db.channels.find((c) => c.id === p.channelId)!;
+    p.title = str(f, "title");
+    p.description = str(f, "description");
+    p.hashtags = list(str(f, "hashtags").replace(/#/g, " ").replace(/\s+/g, ",")).map((h) => h.replace(/^#/, ""));
+    const when = str(f, "scheduledAt"); // wall time in the channel's zone
+    if (when) {
+      const [d, tm] = when.split("T");
+      const [y, m, day] = d.split("-").map(Number);
+      const [hh, mm] = tm.split(":").map(Number);
+      p.scheduledAt = zonedToUtc(y, m, day, hh, mm, channel.timezone).toISOString();
+    } else p.scheduledAt = undefined;
+    // Any edit to an approved post requires re-approval unless autopilot is on.
+    if (p.status === "scheduled" && !channel.autopilot) p.status = "proposed";
+    if (p.status === "failed") { p.status = "proposed"; p.attempts = 0; p.error = undefined; p.nextAttemptAt = undefined; }
+    const video = db.videos.find((v) => v.id === p.videoId)!;
+    invalid = hasErrors(validatePost(p as Post, video));
+    if (p.status === "scheduled" && invalid) p.status = "proposed";
+    syncVideoStatus(db, p.videoId);
+  });
+  done([`/videos/${videoId}`, "/calendar", "/"]);
+  back(`/videos/${videoId}`, invalid ? "Saved, but this version has validation errors." : "Saved.", invalid);
+}
+
+/* ── Channels, templates, rules ─────────────── */
+
+export async function updateChannelAction(f: FormData) {
+  const id = str(f, "channelId");
+  mutate((db) => {
+    const c = db.channels.find((x) => x.id === id && x.userId === currentUserId());
+    if (!c) return;
+    c.name = str(f, "name") || c.name;
+    const tz = str(f, "timezone");
+    try { new Intl.DateTimeFormat("en", { timeZone: tz }); c.timezone = tz; } catch { /* keep old */ }
+    c.autopilot = f.get("autopilot") === "on";
+    c.lowQueueThresholdDays = Math.max(0, Number(str(f, "lowQueueThresholdDays")) || 0);
+    c.color = str(f, "color") || c.color;
+  });
+  done(["/channels", "/"]);
+  back("/channels", "Saved.");
+}
+
+export async function addChannelAction(f: FormData) {
+  const name = str(f, "name");
+  if (!name) back("/channels");
+  mutate((db) => {
+    const uid = currentUserId();
+    db.channels.push({
+      id: newId(), userId: uid, createdAt: nowIso(), name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, ""),
+      color: "#3d6f7e", timezone: "Europe/Madrid", autopilot: false, lowQueueThresholdDays: 5,
+      accounts: PLATFORMS.map((platform) => ({ platform, handle: "", connected: false })),
+    });
+  });
+  done(["/channels"]);
+  back("/channels");
+}
+
+export async function upsertTemplateAction(f: FormData) {
+  const channelId = str(f, "channelId");
+  const platform = str(f, "platform") as Platform;
+  mutate((db) => {
+    const uid = currentUserId();
+    if (!db.channels.some((c) => c.id === channelId && c.userId === uid) || !PLATFORMS.includes(platform)) return;
+    let tpl = db.templates.find((x) => x.userId === uid && x.channelId === channelId && x.platform === platform);
+    if (!tpl) {
+      tpl = { id: newId(), userId: uid, createdAt: nowIso(), channelId, platform, fixedHashtags: [], descriptionFooter: "", language: "es", madeForKids: false, toneOfVoice: "" };
+      db.templates.push(tpl);
+    }
+    tpl.fixedHashtags = list(str(f, "fixedHashtags").replace(/#/g, " ").replace(/\s+/g, ","));
+    tpl.descriptionFooter = str(f, "descriptionFooter");
+    tpl.youtubeCategoryId = str(f, "youtubeCategoryId") || undefined;
+    tpl.language = str(f, "language") || "es";
+    tpl.madeForKids = f.get("madeForKids") === "on";
+    tpl.playlistId = str(f, "playlistId") || undefined;
+    tpl.toneOfVoice = str(f, "toneOfVoice");
+  });
+  done(["/channels"]);
+  back("/channels", "Template saved.");
+}
+
+export async function upsertRuleAction(f: FormData) {
+  const ruleId = str(f, "ruleId");
+  const times = list(str(f, "times")).filter((x) => /^([01]\d|2[0-3]):[0-5]\d$/.test(x));
+  const days = f.getAll("days").map(Number).filter((d) => d >= 0 && d <= 6);
+  const platforms = f.getAll("platforms").map(String).filter((p): p is Platform => PLATFORMS.includes(p as Platform));
+  if (!times.length || !days.length || !platforms.length) back("/queue", "A rule needs at least one valid time, day and platform.", true);
+  mutate((db) => {
+    const uid = currentUserId();
+    const channelId = str(f, "channelId");
+    if (!db.channels.some((c) => c.id === channelId && c.userId === uid)) return;
+    const existing = db.queueRules.find((r) => r.id === ruleId && r.userId === uid);
+    const values = { channelId, times, daysOfWeek: days, platforms, active: f.get("active") === "on" };
+    if (existing) Object.assign(existing, values);
+    else db.queueRules.push({ id: newId(), userId: uid, createdAt: nowIso(), ...values });
+  });
+  done(["/queue", "/"]);
+  back("/queue", "Rule saved.");
+}
+
+export async function deleteRuleAction(f: FormData) {
+  const ruleId = str(f, "ruleId");
+  mutate((db) => { db.queueRules = db.queueRules.filter((r) => !(r.id === ruleId && r.userId === currentUserId())); });
+  done(["/queue", "/"]);
+  back("/queue");
+}
+
+export async function markAllReadAction() {
+  mutate((db) => db.notifications.filter((n) => n.userId === currentUserId()).forEach((n) => (n.read = true)));
+  done(["/notifications"]);
+  back("/notifications");
+}
