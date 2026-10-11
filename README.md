@@ -9,7 +9,7 @@
 ```bash
 npm install
 cp .env.example .env.local   # defaults are fine for Phase 1
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3000 (no password needed locally unless APP_PASSWORD is set)
 npm test                     # unit tests (scheduler, validation, retries, encryption)
 ```
 
@@ -22,6 +22,26 @@ On first load, the app seeds the **Bioniche** and **Pepito Alerta** channels wit
 4. **Calendar**: drag a video to another day. All of its platform versions move together and go back to "needs OK" unless autopilot is on.
 5. **Dashboard → Run due publishes** publishes everything that's due through the dry-run publisher. Posts get marked published with a fake id, and nothing reaches any platform.
 6. **Scheduler tick**: in production, call `GET /api/cron/tick` every minute with `Authorization: Bearer $CRON_SECRET`. Each tick fills the queue, publishes what's due (with retries at 5, 20 and 60 min), raises low-queue alerts and sends them to Telegram if it's configured.
+
+## Install as an app (PWA)
+
+GridCast is an installable PWA. In Chrome or Edge on desktop or Android, use the **Install app** button (bottom-right) or the install icon in the address bar. On iPhone, open the site in Safari, then Share → **Add to Home Screen**.
+- The service worker (`public/sw.js`) caches static assets and the pages you visit, so the app opens fast and still shows recent pages when you're offline. If a page isn't cached, you get an offline screen.
+- Anything that changes data (uploads, approvals, publishing, `/api/*`) always goes to the server and is never cached.
+
+## Deploy to Vercel
+
+1. On vercel.com, go to **Add New → Project** and import `lagoanadia/gridcast`. The framework (Next.js) is detected automatically.
+2. Under **Environment Variables**, add:
+   - `APP_PASSWORD`: required. Without it the deployment returns 503.
+   - `CRON_SECRET`: any long random string.
+   - `PUBLISHER_MODE`: `dry-run`
+3. Click **Deploy**. After that, every push to the branch redeploys automatically.
+
+**Limits of this deployment until Supabase is connected (Phase 1b):**
+- On Vercel, data lives in `/tmp`, which is temporary and **separate for each server instance**. Your data resets and can even look different between requests. The app shows a banner saying so. Treat it as a demo.
+- Vercel functions accept request bodies of about 4.5 MB, so uploads are capped at 4 MB there. Real videos will upload straight to Supabase Storage.
+- The scheduler: Vercel Cron on the Hobby plan only runs once a day. Publishing at exact times needs Vercel Pro (per-minute cron), an external pinger calling `/api/cron/tick`, or Inngest (Phase 2).
 
 ## Architecture
 

@@ -76,7 +76,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         <div>
           <h1>{title}</h1>
           <p>{t("calendar.dragHint")}</p>
-          {isDryRun() && <div className="dry-banner" style={{ marginTop: 10 }}>● {t("common.dryRunBanner")}</div>}
+          {isDryRun() && <div className="dry-banner" style={{ marginTop: 12 }}>{t("common.dryRunBanner")}</div>}
         </div>
         <div className="stack" style={{ alignItems: "flex-end" }}>
           <div className="row">
@@ -92,14 +92,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       </div>
       <div className="spread" style={{ marginBottom: 12 }}>
         <div className="row small">
-          <Link href={`/calendar?view=${view}&date=${key(ay, am, ad)}`} className={`pill ${!sp.channel ? "scheduled" : "tag"}`}>{t("common.all")}</Link>
+          <Link href={`/calendar?view=${view}&date=${key(ay, am, ad)}`} className={`pill ${!sp.channel ? "on" : ""}`}>{t("common.all")}</Link>
           {db.channels.map((c) => (
-            <Link key={c.id} href={`/calendar?view=${view}&date=${key(ay, am, ad)}&channel=${c.id}`} className={`pill ${sp.channel === c.id ? "scheduled" : "tag"}`}>
+            <Link key={c.id} href={`/calendar?view=${view}&date=${key(ay, am, ad)}&channel=${c.id}`} className={`pill ${sp.channel === c.id ? "on" : ""}`}>
               <span className="dot" style={{ background: c.color }} />{c.name}
             </Link>
           ))}
         </div>
-        <span className="small muted">{t("calendar.timezone", { tz })}</span>
+        <span className="small data muted">{t("calendar.timezone", { tz })}</span>
       </div>
       <CalendarBoard key={[...groups.values()].map((c) => `${c.id}${c.dayKey}${c.status}`).join()} days={days} chips={[...groups.values()]} heads={heads} tz={tz} view={view} needsApproval={t("calendar.needsApproval")} />
     </>

@@ -1,4 +1,4 @@
-import { addChannelAction, updateChannelAction, upsertTemplateAction } from "../actions";
+import { addChannelAction, updateChannelAction, upsertTemplateAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
 import { PlatformPill } from "@/components/Pills";
 import { getData } from "@/lib/data";

@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { setVideoStatusAction } from "../actions";
+import { setVideoStatusAction } from "@/app/actions";
 import { fmtDuration, PlatformPill, VideoStatusPill } from "@/components/Pills";
+import { PrintScene } from "@/components/PrintScene";
 import { Uploader } from "@/components/Uploader";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";
 import { PLATFORMS, VIDEO_STATUSES } from "@/lib/types";
+
+// Vercel functions reject request bodies over ~4.5 MB; direct-to-storage uploads arrive with Supabase (Phase 1b).
+const MAX_MB = process.env.VERCEL ? 4 : undefined;
 
 type SP = Promise<{ channel?: string; status?: string; format?: string; platform?: string }>;
 
@@ -28,7 +32,8 @@ export default async function Library({ searchParams }: { searchParams: SP }) {
 
       <Uploader
         channels={db.channels.map((c) => ({ id: c.id, name: c.name }))}
-        labels={{ hint: t("library.uploadHint"), pick: t("library.pickFiles"), uploading: t("library.uploading"), uploaded: t("library.uploaded"), channel: t("library.channel") }}
+        labels={{ hint: t("library.uploadHint"), pick: t("library.pickFiles"), uploading: t("library.uploading"), uploaded: t("library.uploaded"), channel: t("library.channel"), failed: t("library.uploadFailed"), tooLarge: t("library.tooLarge", { mb: MAX_MB ?? 0 }) }}
+        maxMb={MAX_MB}
       />
 
       <form className="filters section" method="get">
@@ -59,28 +64,30 @@ export default async function Library({ searchParams }: { searchParams: SP }) {
         <button className="btn">{t("common.apply")}</button>
       </form>
 
-      <div className="grid grid-3 section">
+      <div className="grid grid-3 section" style={{ gap: 18 }}>
         {videos.length === 0 && <div className="empty" style={{ gridColumn: "1/-1" }}>{t("library.empty")}</div>}
         {videos.map((v) => {
           const channel = db.channels.find((c) => c.id === v.channelId);
           const platforms = Array.from(new Set(db.posts.filter((p) => p.videoId === v.id && p.status !== "cancelled").map((p) => p.platform)));
           const real = v.filePath && !v.filePath.startsWith("demo://");
           return (
-            <article key={v.id} className="card video-card">
+            <article key={v.id} className="stamp">
               <Link href={`/videos/${v.id}`} className="thumb" aria-label={v.title}>
-                {real ? <video src={`/api/media/${v.id}#t=0.5`} preload="metadata" muted /> : <span className="ph">{v.title.slice(0, 1)}</span>}
-                <span className="dur">{fmtDuration(v.durationSec)}</span>
+                <span className="denom">{fmtDuration(v.durationSec)}</span>
+                <span className="dur"><span className="dot" style={{ background: channel?.color }} /></span>
+                <span className="window">
+                  {real ? <video src={`/api/media/${v.id}#t=0.5`} preload="metadata" muted /> : <PrintScene seed={v.id} />}
+                </span>
               </Link>
               <div className="body">
-                <div className="row small">
-                  <span className="dot" style={{ background: channel?.color }} />
-                  <span className="muted">{channel?.name}</span>
+                <div className="row small" style={{ gap: 6 }}>
+                  <span className="data muted">{channel?.name}</span>
                   <VideoStatusPill s={v.status} />
                 </div>
                 <Link href={`/videos/${v.id}`} className="title">{v.title}</Link>
                 {v.formatTags.length > 0 && <div className="row" style={{ gap: 4 }}>{v.formatTags.map((f) => <span key={f} className="pill tag">{f}</span>)}</div>}
                 {platforms.length > 0 && <div className="row" style={{ gap: 4 }}>{platforms.map((p) => <PlatformPill key={p} p={p} />)}</div>}
-                {v.expiresAt && <span className="small muted">{t("library.expires", { date: new Date(v.expiresAt).toLocaleDateString("en-GB") })}</span>}
+                {v.expiresAt && <span className="small data" style={{ color: "var(--rust)" }}>{t("library.expires", { date: new Date(v.expiresAt).toLocaleDateString("en-GB") })}</span>}
                 {(v.status === "draft" || v.status === "ready") && (
                   <form action={setVideoStatusAction} style={{ marginTop: "auto" }}>
                     <input type="hidden" name="videoId" value={v.id} />

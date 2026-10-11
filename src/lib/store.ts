@@ -8,7 +8,9 @@ import type { Database } from "./types";
  * Every row has userId and every accessor filters by it, mirroring the Supabase
  * RLS policies in supabase/migrations. Phase 1b swaps this file for a Supabase adapter.
  */
-export const DATA_DIR = path.join(process.cwd(), ".data");
+// On Vercel the deployment filesystem is read-only; only /tmp is writable (and not persistent).
+export const DATA_DIR =
+  process.env.GRIDCAST_DATA_DIR ?? (process.env.VERCEL ? "/tmp/gridcast" : path.join(process.cwd(), ".data"));
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 

@@ -1,8 +1,6 @@
-import { markAllReadAction } from "../actions";
+import { markAllReadAction } from "@/app/actions";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";
-
-const ICON = { low_queue: "⚠", publish_failed: "✕", publish_retry: "↻", expiry: "⌛" } as const;
 
 export default function NotificationsPage() {
   const { db } = getData();
@@ -19,10 +17,10 @@ export default function NotificationsPage() {
             const c = db.channels.find((x) => x.id === n.channelId);
             return (
               <div key={n.id} className={`row ${n.read ? "" : "unread"}`}>
-                <span aria-hidden="true" style={{ fontSize: 18, width: 22 }}>{ICON[n.kind]}</span>
+                <span className={`pill ${n.kind === "publish_failed" ? "failed" : n.kind === "low_queue" ? "on" : ""}`} style={{ minWidth: 92, justifyContent: "center" }}>{t(`notifications.kind.${n.kind}`)}</span>
                 {c && <span className="dot" style={{ background: c.color }} />}
                 <span style={{ flex: 1, minWidth: 200 }}>{n.message}</span>
-                <span className="small muted">{new Date(n.createdAt).toLocaleString("en-GB")}</span>
+                <span className="small data muted">{new Date(n.createdAt).toLocaleString("en-GB")}</span>
               </div>
             );
           })}

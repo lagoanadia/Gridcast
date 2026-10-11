@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-type Labels = { hint: string; pick: string; uploading: string; uploaded: string; channel: string };
+type Labels = { hint: string; pick: string; uploading: string; uploaded: string; channel: string; failed: string; tooLarge: string };
 
 /** Reads duration and dimensions in the browser, then uploads each file. */
 function probe(file: File): Promise<{ durationSec?: number; width?: number; height?: number }> {
@@ -19,7 +19,8 @@ function probe(file: File): Promise<{ durationSec?: number; width?: number; heig
   });
 }
 
-export function Uploader({ channels, labels }: { channels: { id: string; name: string }[]; labels: Labels }) {
+/** maxMb: per-file cap when the host limits request bodies (Vercel functions accept ~4.5 MB). */
+export function Uploader({ channels, labels, maxMb }: { channels: { id: string; name: string }[]; labels: Labels; maxMb?: number }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [channelId, setChannelId] = useState(channels[0]?.id ?? "");
@@ -29,17 +30,28 @@ export function Uploader({ channels, labels }: { channels: { id: string; name: s
   async function upload(files: FileList | File[]) {
     const list = Array.from(files).filter((f) => f.type.startsWith("video/"));
     let done = 0;
+    const failures: string[] = [];
     for (const file of list) {
+      if (maxMb && file.size > maxMb * 1024 * 1024) {
+        failures.push(`${file.name} (${labels.tooLarge})`);
+        continue;
+      }
       setStatus(labels.uploading.replace("{done}", String(done)).replace("{total}", String(list.length)));
       const meta = await probe(file);
       const fd = new FormData();
       fd.set("file", file);
       fd.set("channelId", channelId);
       fd.set("meta", JSON.stringify(meta));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (res.ok) done++;
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (res.ok) done++;
+        else failures.push(`${file.name} (${(await res.json().catch(() => null))?.error ?? res.status})`);
+      } catch (e) {
+        failures.push(`${file.name} (${(e as Error).message})`);
+      }
     }
-    setStatus(labels.uploaded.replace("{n}", String(done)));
+    const msg = labels.uploaded.replace("{n}", String(done));
+    setStatus(failures.length ? `${msg} ${labels.failed.replace("{n}", String(failures.length)).replace("{reason}", failures.join(", "))}` : msg);
     router.refresh();
   }
 

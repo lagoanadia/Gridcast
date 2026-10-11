@@ -14,3 +14,6 @@ export function getData() {
 }
 
 export const isDryRun = () => (process.env.PUBLISHER_MODE ?? "dry-run") === "dry-run";
+
+/** True on serverless hosts where the local JSON store lives in /tmp and is wiped between instances. */
+export const isEphemeralStore = () => !!process.env.VERCEL && !process.env.GRIDCAST_DATA_DIR;

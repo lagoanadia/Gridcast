@@ -1,4 +1,4 @@
-import { deleteRuleAction, upsertRuleAction } from "../actions";
+import { deleteRuleAction, upsertRuleAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";

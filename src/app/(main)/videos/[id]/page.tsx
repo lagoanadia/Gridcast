@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { approveAction, createPostAction, deleteVideoAction, setVideoStatusAction, unscheduleAction, updatePostAction, updateVideoAction } from "../../actions";
+import { approveAction, createPostAction, deleteVideoAction, setVideoStatusAction, unscheduleAction, updatePostAction, updateVideoAction } from "@/app/actions";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { Flash } from "@/components/Flash";
 import { fmtDuration, PlatformPill, PostStatusPill, VideoStatusPill } from "@/components/Pills";
 import { PostEditor } from "@/components/PostEditor";
+import { PrintScene } from "@/components/PrintScene";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";
 import { hasErrors, PLATFORM_LIMITS, validatePost } from "@/lib/platforms";
@@ -34,10 +35,10 @@ export default async function VideoPage({ params, searchParams }: { params: Prom
     <>
       <div className="page-head">
         <div>
-          <Link href="/library" className="small muted">← {t("nav.library")}</Link>
-          <h1 style={{ marginTop: 6 }}>{video.title}</h1>
+          <Link href="/library" className="kicker">← {t("nav.library")}</Link>
+          <h1>{video.title}</h1>
           <div className="row small" style={{ marginTop: 8 }}>
-            <span className="dot" style={{ background: channel.color }} /> {channel.name}
+            <span className="dot" style={{ background: channel.color }} /> <span className="data">{channel.name}</span>
             <VideoStatusPill s={video.status} />
             <span className="pill tag">{fmtDuration(video.durationSec)}</span>
             {video.width && <span className="pill tag">{t("video.dimensions", { w: video.width, h: video.height ?? 0 })}</span>}
@@ -57,7 +58,7 @@ export default async function VideoPage({ params, searchParams }: { params: Prom
 
       <div className="detail">
         <div className="stack">
-          {real ? <video className="player" src={`/api/media/${video.id}`} controls preload="metadata" /> : <div className="player-ph">{t("video.noFile")}</div>}
+          {real ? <video className="player" src={`/api/media/${video.id}`} controls preload="metadata" /> : <div className="player-ph" title={t("video.noFile")}><PrintScene seed={video.id} /></div>}
           <div className="card flat small">
             <h3>{t("video.transcript")}</h3>
             <p className="muted" style={{ marginBottom: 0 }}>{video.transcript ?? t("video.transcriptSoon")}</p>

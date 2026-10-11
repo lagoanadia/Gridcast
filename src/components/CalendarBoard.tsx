@@ -62,13 +62,15 @@ export function CalendarBoard({ days, chips, heads, tz, view, needsApproval }: {
                 className={`chip ${c.status}`}
                 draggable={c.draggable}
                 onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}
-                style={{ borderLeftWidth: 6, borderLeftStyle: "solid", borderLeftColor: c.color }}
+                style={{ boxShadow: `inset 0 -3px 0 ${c.color}` }}
               >
-                <span className="t">{c.title}</span>
-                <span className="meta">
-                  <strong>{c.time}</strong>
-                  <span>{c.platforms.map((p) => p.slice(0, 2).toUpperCase()).join(" · ")}</span>
-                  {c.status === "proposed" && <span className="needs">· {needsApproval}</span>}
+                <span className="stub">
+                  {c.time}
+                  <small>{c.platforms.map((p) => p.slice(0, 2).toUpperCase()).join("·")}</small>
+                </span>
+                <span className="t">
+                  <span className="tt">{c.title}</span>
+                  {c.status === "proposed" && <span className="needs">{needsApproval}</span>}
                 </span>
               </Link>
             ))}

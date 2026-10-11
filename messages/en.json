@@ -1,10 +1,10 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Today",
     "library": "Library",
     "calendar": "Calendar",
     "queue": "Queue rules",
-    "channels": "Channels & templates",
+    "channels": "Channels",
     "notifications": "Alerts"
   },
   "common": {
@@ -42,10 +42,10 @@
     "cancelled": "Cancelled"
   },
   "dashboard": {
-    "title": "Today at the grid",
+    "title": "Today",
     "daysLeft": "days of videos left",
     "noRules": "No queue rules yet",
-    "lowQueue": "Running low — below your {n}-day threshold",
+    "lowQueue": "Running low",
     "nextPost": "Next",
     "nothingNext": "Nothing scheduled",
     "fillQueue": "Fill queue",
@@ -56,12 +56,17 @@
     "approveAll": "Approve all valid",
     "approvedN": "{n} approved.",
     "noPending": "Nothing waiting. The queue proposes, you confirm.",
-    "autopilotOn": "Autopilot on",
+    "autopilotOn": "Autopilot",
     "ready": "ready",
-    "queued": "queued"
+    "queued": "queued",
+    "lowQueueDetail": "Below your {n}-day threshold",
+    "ridge": "Next {n} days",
+    "ridgeEnd": "day {n}",
+    "channelNo": "Channel {n}",
+    "needsFixes": "Needs fixes"
   },
   "library": {
-    "title": "Video library",
+    "title": "Library",
     "upload": "Upload videos",
     "uploadHint": "Drop vertical videos here or pick several at once. Duration and size are read automatically.",
     "uploading": "Uploading {done}/{total}…",
@@ -74,7 +79,9 @@
     "markReady": "Mark ready",
     "backToDraft": "Back to draft",
     "expires": "Expires {date}",
-    "pickFiles": "Choose files"
+    "pickFiles": "Choose files",
+    "uploadFailed": "{n} failed: {reason}",
+    "tooLarge": "over {mb} MB, not supported on this deployment yet"
   },
   "video": {
     "details": "Details",
@@ -152,6 +159,26 @@
   "notifications": {
     "title": "Alerts",
     "empty": "All quiet.",
-    "markRead": "Mark all read"
+    "markRead": "Mark all read",
+    "kind": {
+      "low_queue": "Low queue",
+      "publish_failed": "Failed",
+      "publish_retry": "Retrying",
+      "expiry": "Expired"
+    }
+  },
+  "pwa": {
+    "install": "Install app",
+    "offlineTitle": "You're offline",
+    "offlineBody": "GridCast needs a connection to load your queue. Pages you opened recently still work.",
+    "retry": "Try again"
+  },
+  "deploy": {
+    "ephemeral": "Preview deployment — data is temporary and resets. Connect Supabase to keep it."
+  },
+  "auth": {
+    "password": "Password",
+    "signIn": "Sign in",
+    "wrong": "Wrong password."
   }
 }
