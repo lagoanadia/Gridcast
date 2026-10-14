@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { encryptToken } from "@/lib/crypto";
 import { appOrigin, CALLBACK_PATH, exchangeCode, fetchChannelHandle } from "@/lib/oauth/google";
 import { currentUserId, mutate } from "@/lib/store";
-import { safeEqual } from "@/lib/session";
+import { safeEqual } from "@/lib/safeEqual";
 
 const STATE_COOKIE = "gc_oauth_google";
 

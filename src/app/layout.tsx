@@ -20,7 +20,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-/** Bare document. The app shell (sidebar, data) lives in (main)/layout.tsx so /login and /offline leak nothing. */
+/** Bare document. The app shell (sidebar, data) lives in (main)/layout.tsx so /offline stays a bare page. */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">

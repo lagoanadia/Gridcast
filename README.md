@@ -9,7 +9,7 @@
 ```bash
 npm install
 cp .env.example .env.local   # defaults are fine for Phase 1
-npm run dev                  # http://localhost:3000 (no password needed locally unless APP_PASSWORD is set)
+npm run dev                  # http://localhost:3000
 npm test                     # unit tests (scheduler, validation, retries, encryption)
 ```
 
@@ -33,7 +33,6 @@ GridCast is an installable PWA. In Chrome or Edge on desktop or Android, use the
 
 1. On vercel.com, go to **Add New → Project** and import `lagoanadia/gridcast`. The framework (Next.js) is detected automatically.
 2. Under **Environment Variables**, add:
-   - `APP_PASSWORD`: required. Without it the deployment returns 503.
    - `CRON_SECRET`: any long random string.
    - `PUBLISHER_MODE`: `dry-run`
 3. Click **Deploy**. After that, every push to the branch redeploys automatically.
