@@ -1,4 +1,4 @@
-import { addChannelAction, updateChannelAction, upsertTemplateAction } from "@/app/actions";
+import { addChannelAction, connectInstagramAction, disconnectAccountAction, updateChannelAction, upsertTemplateAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
 import { PlatformPill } from "@/components/Pills";
 import { getData } from "@/lib/data";
@@ -7,7 +7,7 @@ import { PLATFORMS } from "@/lib/types";
 
 export default async function ChannelsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const sp = await searchParams;
-  const { db } = getData();
+  const { db } = await getData();
   return (
     <>
       <div className="page-head"><h1>{t("channels.title")}</h1></div>
@@ -24,9 +24,6 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                     <span key={a.platform} className="row" style={{ gap: 4 }}>
                       <PlatformPill p={a.platform} />
                       <span className="muted">{a.connected ? a.handle : t("channels.notConnected")}</span>
-                      {a.platform === "youtube" && (
-                        <a className="btn sm" href={`/api/oauth/google/start?channelId=${c.id}`}>{a.connected ? t("channels.reconnect") : t("channels.connect")}</a>
-                      )}
                     </span>
                   ))}
                 </div>
@@ -40,6 +37,35 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
               <label className="check"><input type="checkbox" name="autopilot" defaultChecked={c.autopilot} />{t("channels.autopilot")} <span className="muted small" style={{ fontWeight: 400 }}>— {t("channels.autopilotHint")}</span></label>
               <div><button className="btn primary">{t("common.save")}</button></div>
             </form>
+
+            <div className="card stack">
+              <h3>{t("channels.connections")}</h3>
+              {(["instagram", "tiktok", "youtube"] as const).map((p) => {
+                const a = c.accounts.find((x) => x.platform === p);
+                return (
+                  <div key={p} className="spread" style={{ alignItems: "flex-start", gap: 14 }}>
+                    <div className="row"><PlatformPill p={p} /><span className="muted small">{a?.connected ? `${t("channels.connected")}: ${a.handle}` : t("channels.notConnected")}</span></div>
+                    {p === "instagram" && (
+                      a?.connected ? (
+                        <form action={disconnectAccountAction}>
+                          <input type="hidden" name="channelId" value={c.id} /><input type="hidden" name="platform" value="instagram" />
+                          <button className="btn sm danger">{t("channels.disconnect")}</button>
+                        </form>
+                      ) : (
+                        <form action={connectInstagramAction} className="row" style={{ flex: 1, justifyContent: "flex-end" }}>
+                          <input type="hidden" name="channelId" value={c.id} />
+                          <input type="password" name="token" autoComplete="off" placeholder={t("channels.instagramToken")} style={{ maxWidth: 360 }} aria-label={t("channels.instagramToken")} />
+                          <button className="btn sm primary">{t("channels.connectShort")}</button>
+                        </form>
+                      )
+                    )}
+                    {p === "youtube" && <a className="btn sm" href={`/api/oauth/google/start?channelId=${c.id}`}>{a?.connected ? t("channels.reconnect") : t("channels.connect")}</a>}
+                    {p === "tiktok" && <span className="small muted">{t("channels.soon")}</span>}
+                  </div>
+                );
+              })}
+              <p className="small muted" style={{ margin: 0 }}>{t("channels.connectionsHint")}</p>
+            </div>
 
             <h3>{t("channels.templates")}</h3>
             <div className="grid grid-3">

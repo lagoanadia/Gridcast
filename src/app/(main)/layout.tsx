@@ -7,8 +7,8 @@ import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { db } = getData();
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const { db } = await getData();
   const unread = db.notifications.filter((n) => !n.read).length;
   const items: NavItem[] = [
     { href: "/", label: t("nav.today"), icon: "today" },

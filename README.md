@@ -29,18 +29,28 @@ GridCast is an installable PWA. In Chrome or Edge on desktop or Android, use the
 - The service worker (`public/sw.js`) caches static assets and the pages you visit, so the app opens fast and still shows recent pages when you're offline. If a page isn't cached, you get an offline screen.
 - Anything that changes data (uploads, approvals, publishing, `/api/*`) always goes to the server and is never cached.
 
-## Deploy to Vercel
+## Go live (use it for real)
 
-1. On vercel.com, go to **Add New → Project** and import `lagoanadia/gridcast`. The framework (Next.js) is detected automatically.
-2. Under **Environment Variables**, add:
-   - `CRON_SECRET`: any long random string.
-   - `PUBLISHER_MODE`: `dry-run`
-3. Click **Deploy**. After that, every push to the branch redeploys automatically.
+Without any of this the app runs as a demo: data lives in a temporary file, nothing is published and uploads are capped at 4 MB.
 
-**Limits of this deployment until Supabase is connected (Phase 1b):**
-- On Vercel, data lives in `/tmp`, which is temporary and **separate for each server instance**. Your data resets and can even look different between requests. The app shows a banner saying so. Treat it as a demo.
-- Vercel functions accept request bodies of about 4.5 MB, so uploads are capped at 4 MB there. Real videos will upload straight to Supabase Storage.
-- The scheduler: Vercel Cron on the Hobby plan only runs once a day. Publishing at exact times needs Vercel Pro (per-minute cron), an external pinger calling `/api/cron/tick`, or Inngest (Phase 2).
+1. **Supabase** (database + file storage). In Vercel: *Storage → Create → Supabase* (or *Integrations → Supabase*). It adds `POSTGRES_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` by itself. The table and the file bucket are created automatically on first use. From then on the app is **live**: demo data disappears, files go to the cloud and uploads can be up to 50 MB.
+2. **`TOKEN_ENCRYPTION_KEY`**: generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Needed to store access tokens encrypted. Changing it later means reconnecting accounts.
+3. **`CRON_SECRET`**: any long random string, set in Vercel **and** as a GitHub Actions secret, together with the Actions variable `APP_URL`. `.github/workflows/tick.yml` then calls `/api/cron/tick` every 5 minutes, which publishes what is due.
+4. **Instagram**: in *Cuentas → Conexiones* paste the access token of the professional Instagram account (see below). Each account keeps its own token, encrypted.
+5. Optional: `GROQ_API_KEY` for "Sugerir con IA", `GOOGLE_CLIENT_ID/SECRET` + `APP_URL` for YouTube login.
+
+Networks really published today: **Instagram** (photos and Reels). YouTube and TikTok show as "coming soon" in the wizard; in live mode a post for an unconnected network is refused instead of being faked.
+
+### Instagram token (no Facebook Page needed)
+1. Account must be **Professional** (Creator or Business).
+2. In developers.facebook.com create an app, add the product **Instagram → API setup with Instagram login**, add the account and press **Generate token**.
+3. Paste that token in *Cuentas*. Tokens last 60 days and are renewed automatically by the scheduler tick.
+While the Meta app is in development mode it only works for accounts added to the app (yours and your testers'), which needs no app review.
+
+### Limits to know
+- Instagram: 50 posts per 24 h; photos must be JPEG (the wizard converts them), Reels up to 3 minutes, 9:16.
+- Vercel Hobby: functions stop after 60 s; the tick waits up to 40 s for a video to be processed and retries later if it is slow.
+- The scheduler runs every 5 minutes (GitHub Actions), so posts can go out a few minutes late.
 
 ## Architecture
 
@@ -56,7 +66,7 @@ GridCast is an installable PWA. In Chrome or Edge on desktop or Android, use the
 | Translations (all UI text) | `messages/en.json`, `src/lib/i18n.ts` |
 | Postgres schema with RLS (Phase 1b) | `supabase/migrations/0001_init.sql` |
 
-Phase 1 stores data in a local JSON file (`.data/db.json`) and uploads in `.data/uploads/`. That way the app runs with zero accounts. All domain logic is storage-agnostic, and the Supabase schema and RLS policies are already written.
+Without `POSTGRES_URL` the app stores data in a local JSON file (`.data/db.json`) and uploads in `.data/uploads/`, so it runs with zero accounts. With it, the whole state lives in one jsonb row in Postgres (`src/lib/pgstore.ts`), read and written under a row lock.
 
 ## Phases
 

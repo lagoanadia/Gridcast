@@ -23,6 +23,10 @@ export interface PlatformAccount {
   handle: string;
   /** Encrypted with TOKEN_ENCRYPTION_KEY; never stored or logged in clear text. */
   tokenEncrypted?: string;
+  /** The platform's own id for the account (Instagram professional account id). */
+  externalUserId?: string;
+  /** When the token was issued or last refreshed (Instagram tokens last 60 days). */
+  tokenIssuedAt?: string;
   connected: boolean;
 }
 
@@ -59,6 +63,8 @@ export interface Video extends Owned {
   description: string;
   fileName?: string;
   filePath?: string;
+  /** Public URL when the file lives in cloud storage (what Instagram downloads from). */
+  mediaUrl?: string;
   fileSizeBytes?: number;
   durationSec?: number;
   width?: number;

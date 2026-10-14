@@ -2,8 +2,8 @@ import { markAllReadAction } from "@/app/actions";
 import { getData } from "@/lib/data";
 import { DATE_LOCALE, t } from "@/lib/i18n";
 
-export default function NotificationsPage() {
-  const { db } = getData();
+export default async function NotificationsPage() {
+  const { db } = await getData();
   const items = [...db.notifications].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <>

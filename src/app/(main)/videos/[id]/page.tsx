@@ -17,7 +17,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export default async function VideoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
-  const { db } = getData();
+  const { db } = await getData();
   const video = db.videos.find((v) => v.id === id);
   if (!video) notFound();
   const channel = db.channels.find((c) => c.id === video.channelId)!;

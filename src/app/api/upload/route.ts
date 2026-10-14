@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
   const userId = currentUserId();
   const video = await storeUpload(file, mediaType, userId, channelId, parseMeta(form.get("meta")));
-  const ok = mutate((db) => {
+  const ok = await mutate((db) => {
     if (!db.channels.some((c) => c.id === channelId && c.userId === userId)) return false;
     db.videos.push(video);
     return true;

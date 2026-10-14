@@ -5,6 +5,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { probeVideo } from "./probe";
 import { newId, nowIso, UPLOAD_DIR } from "./store";
+import { STORAGE_PREFIX } from "./media-storage";
 import type { MediaType, Video } from "./types";
 
 type Meta = { durationSec?: number; width?: number; height?: number };
@@ -38,6 +39,21 @@ export async function storeUpload(file: File, mediaType: MediaType, userId: stri
     description: "", fileName: file.name, filePath, fileSizeBytes: file.size,
     durationSec: mediaType === "video" ? meta.durationSec : undefined,
     width: meta.width, height: meta.height,
+    status: "draft", formatTags: [],
+  };
+}
+
+/** Video row for a file the browser already uploaded to cloud storage. */
+export function videoFromCloudUpload(a: {
+  id: string; userId: string; channelId: string; path: string; publicUrl: string; fileName: string; size: number; mediaType: MediaType; meta: Meta;
+}): Video {
+  return {
+    id: a.id, userId: a.userId, createdAt: nowIso(), channelId: a.channelId, mediaType: a.mediaType,
+    title: a.fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim(),
+    description: "", fileName: a.fileName, filePath: `${STORAGE_PREFIX}${a.path}`, mediaUrl: a.publicUrl,
+    fileSizeBytes: a.size > 0 ? a.size : undefined,
+    durationSec: a.mediaType === "video" ? a.meta.durationSec : undefined,
+    width: a.meta.width, height: a.meta.height,
     status: "draft", formatTags: [],
   };
 }

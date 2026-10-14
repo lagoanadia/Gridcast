@@ -9,7 +9,7 @@ const key = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ view?: string; date?: string; channel?: string }> }) {
   const sp = await searchParams;
-  const { db } = getData();
+  const { db } = await getData();
   const view = sp.view === "month" ? "month" : "week";
   const tz = db.channels[0]?.timezone ?? "UTC";
   const now = new Date();

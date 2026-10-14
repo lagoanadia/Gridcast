@@ -166,7 +166,14 @@
     "tone": "Tono de voz",
     "addChannel": "Añadir cuenta",
     "connect": "Conectar con Google",
-    "reconnect": "Volver a conectar"
+    "reconnect": "Volver a conectar",
+    "connections": "Conexiones",
+    "connected": "Conectada",
+    "disconnect": "Desconectar",
+    "instagramToken": "Pega aquí el token de Instagram",
+    "connectShort": "Conectar",
+    "soon": "Publicar aquí llegará pronto",
+    "connectionsHint": "Instagram se conecta con un token de tu cuenta profesional (lo genera Meta en el panel de tu app). Se guarda cifrado."
   },
   "notifications": {
     "title": "Avisos",
@@ -215,7 +222,7 @@
       "hint": "Arrastra aquí una foto o un vídeo, o elige un archivo.",
       "pick": "Elegir archivo",
       "change": "Cambiar archivo",
-      "tooLarge": "El archivo pesa más de {mb} MB y este despliegue todavía no lo admite.",
+      "tooLarge": "El archivo pesa más de {mb} MB, que es el máximo ahora mismo.",
       "unsupported": "Solo se admiten fotos y vídeos.",
       "photo": "Foto",
       "video": "Vídeo",
@@ -228,7 +235,8 @@
       "format": "Formato",
       "prompt": "Tu prompt",
       "copy": "Copiar prompt",
-      "copied": "¡Copiado!"
+      "copied": "¡Copiado!",
+      "badImage": "No he podido leer esa imagen. Prueba con JPG o PNG."
     },
     "text": {
       "title": "Escribe el texto",
@@ -258,7 +266,9 @@
       "notConnected": "Sin conectar",
       "problems": "Hay que arreglar esto antes de continuar",
       "ok": "Todo en orden",
-      "none": "Elige al menos una red."
+      "none": "Elige al menos una red.",
+      "soon": "Próximamente",
+      "connect": "Conéctala en Cuentas"
     },
     "when": {
       "title": "¿Cuándo sale?",
@@ -292,7 +302,13 @@
       "past": "Esa fecha ya ha pasado.",
       "no_slot": "La cuenta no tiene reglas de cola con huecos libres. Elige un día y hora.",
       "invalid": "Hay cosas que arreglar antes de programar.",
-      "network": "No se ha podido enviar. Inténtalo de nuevo."
+      "network": "No se ha podido enviar. Inténtalo de nuevo.",
+      "upload_missing": "El archivo no ha llegado al almacenamiento. Inténtalo de nuevo.",
+      "no_storage": "Falta configurar el almacenamiento de archivos.",
+      "no_anon_key": "Falta NEXT_PUBLIC_SUPABASE_ANON_KEY en el servidor.",
+      "storage_error": "El almacenamiento no ha respondido. Inténtalo de nuevo.",
+      "upload_failed": "No se ha podido subir el archivo.",
+      "platform_unavailable": "Alguna de las redes elegidas todavía no se puede publicar desde Gridcast."
     }
   }
 }

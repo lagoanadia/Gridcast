@@ -6,7 +6,11 @@ import { redirect } from "next/navigation";
 import { hasErrors, validatePost } from "@/lib/platforms";
 import { getPublisher } from "@/lib/publisher";
 import { approvePost, checkLowQueue, fillQueue, movePost, retryFailedPosts, runDuePublishes, syncVideoStatus, unschedulePost } from "@/lib/services";
-import { currentUserId, loadDb, mutate, newId, nowIso, saveDb } from "@/lib/store";
+import { encryptToken } from "@/lib/crypto";
+import { mediaUrlFor } from "@/lib/media";
+import { inspectToken } from "@/lib/publisher/instagram";
+import { isStoragePath, removeObject, STORAGE_PREFIX } from "@/lib/media-storage";
+import { currentUserId, mutate, newId, nowIso } from "@/lib/store";
 import { buildPostDraft } from "@/lib/templates";
 import { PLATFORMS, type Platform, type Post, type VideoStatus } from "@/lib/types";
 import { t } from "@/lib/i18n";
@@ -24,7 +28,7 @@ function done(paths: string[]) {
 /* ── Queue & publishing ─────────────────────── */
 
 export async function fillQueueAction() {
-  const n = mutate((db) => {
+  const n = await mutate((db) => {
     const created = fillQueue(db, currentUserId(), new Date());
     checkLowQueue(db, currentUserId(), new Date());
     return created;
@@ -34,10 +38,11 @@ export async function fillQueueAction() {
 }
 
 export async function runDueAction() {
-  const db = loadDb();
-  const res = await runDuePublishes(db, getPublisher(), new Date(), (v) => v.filePath ?? "");
-  checkLowQueue(db, currentUserId(), new Date());
-  saveDb(db);
+  const res = await mutate(async (db) => {
+    const r = await runDuePublishes(db, getPublisher(), new Date(), mediaUrlFor);
+    checkLowQueue(db, currentUserId(), new Date());
+    return r;
+  });
   done(["/", "/calendar", "/notifications"]);
   back("/", t("today.ran", { ok: res.filter((r) => r.ok).length, failed: res.filter((r) => !r.ok).length }));
 }
@@ -45,23 +50,23 @@ export async function runDueAction() {
 /** "Reintentar" on a failed card: re-queue its failed posts and publish them right away. */
 export async function retryVideoAction(f: FormData) {
   const videoId = str(f, "videoId");
-  const db = loadDb();
-  const n = retryFailedPosts(db, currentUserId(), videoId, new Date());
-  if (n) await runDuePublishes(db, getPublisher(), new Date(), (v) => v.filePath ?? "");
-  saveDb(db);
+  await mutate(async (db) => {
+    const n = retryFailedPosts(db, currentUserId(), videoId, new Date());
+    if (n) await runDuePublishes(db, getPublisher(), new Date(), mediaUrlFor);
+  });
   done(["/", "/calendar", "/notifications"]);
   back("/", t("today.retried"));
 }
 
 export async function approveAction(f: FormData) {
-  const res = mutate((db) => approvePost(db, currentUserId(), str(f, "postId")));
+  const res = await mutate((db) => approvePost(db, currentUserId(), str(f, "postId")));
   done(["/", "/calendar"]);
   const ret = str(f, "return") || "/";
   back(ret, res.ok ? undefined : `Could not approve: ${res.reason}`, !res.ok);
 }
 
 export async function approveAllAction() {
-  const n = mutate((db) => {
+  const n = await mutate((db) => {
     const uid = currentUserId();
     return db.posts.filter((p) => p.userId === uid && p.status === "proposed").reduce((acc, p) => acc + (approvePost(db, uid, p.id).ok ? 1 : 0), 0);
   });
@@ -70,14 +75,14 @@ export async function approveAllAction() {
 }
 
 export async function unscheduleAction(f: FormData) {
-  mutate((db) => unschedulePost(db, currentUserId(), str(f, "postId")));
+  await mutate((db) => unschedulePost(db, currentUserId(), str(f, "postId")));
   done(["/", "/calendar"]);
   back(str(f, "return") || "/");
 }
 
 /** Called from the calendar drag-and-drop (client). */
 export async function movePostAction(postId: string, scheduledAt: string) {
-  const ok = mutate((db) => movePost(db, currentUserId(), postId, new Date(scheduledAt).toISOString()));
+  const ok = await mutate((db) => movePost(db, currentUserId(), postId, new Date(scheduledAt).toISOString()));
   done(["/", "/calendar"]);
   return ok;
 }
@@ -87,7 +92,7 @@ export async function movePostAction(postId: string, scheduledAt: string) {
 export async function setVideoStatusAction(f: FormData) {
   const id = str(f, "videoId");
   const status = str(f, "status") as VideoStatus;
-  mutate((db) => {
+  await mutate((db) => {
     const v = db.videos.find((x) => x.id === id && x.userId === currentUserId());
     if (!v || !["draft", "ready"].includes(status)) return;
     v.status = status;
@@ -101,7 +106,7 @@ export async function setVideoStatusAction(f: FormData) {
 
 export async function updateVideoAction(f: FormData) {
   const id = str(f, "videoId");
-  mutate((db) => {
+  await mutate((db) => {
     const v = db.videos.find((x) => x.id === id && x.userId === currentUserId());
     if (!v) return;
     v.title = str(f, "title");
@@ -118,10 +123,12 @@ export async function updateVideoAction(f: FormData) {
 
 export async function deleteVideoAction(f: FormData) {
   const id = str(f, "videoId");
-  mutate((db) => {
+  await mutate((db) => {
     const v = db.videos.find((x) => x.id === id && x.userId === currentUserId());
     if (!v) return;
-    if (v.filePath && !v.filePath.startsWith("demo://")) {
+    if (v.filePath && isStoragePath(v.filePath)) {
+      removeObject(v.filePath.slice(STORAGE_PREFIX.length)).catch(() => undefined);
+    } else if (v.filePath && !v.filePath.startsWith("demo://")) {
       try { unlinkSync(v.filePath); } catch { /* already gone */ }
     }
     db.videos = db.videos.filter((x) => x.id !== id);
@@ -135,7 +142,7 @@ export async function deleteVideoAction(f: FormData) {
 export async function createPostAction(f: FormData) {
   const id = str(f, "videoId");
   const platform = str(f, "platform") as Platform;
-  mutate((db) => {
+  await mutate((db) => {
     const uid = currentUserId();
     const v = db.videos.find((x) => x.id === id && x.userId === uid);
     if (!v || !PLATFORMS.includes(platform)) return;
@@ -153,7 +160,7 @@ export async function updatePostAction(f: FormData) {
   const postId = str(f, "postId");
   let videoId = "";
   let invalid = false;
-  mutate((db) => {
+  await mutate((db) => {
     const uid = currentUserId();
     const p = db.posts.find((x) => x.id === postId && x.userId === uid);
     if (!p || !["proposed", "scheduled", "failed"].includes(p.status)) return;
@@ -185,7 +192,7 @@ export async function updatePostAction(f: FormData) {
 
 export async function updateChannelAction(f: FormData) {
   const id = str(f, "channelId");
-  mutate((db) => {
+  await mutate((db) => {
     const c = db.channels.find((x) => x.id === id && x.userId === currentUserId());
     if (!c) return;
     c.name = str(f, "name") || c.name;
@@ -202,7 +209,7 @@ export async function updateChannelAction(f: FormData) {
 export async function addChannelAction(f: FormData) {
   const name = str(f, "name");
   if (!name) back("/channels");
-  mutate((db) => {
+  await mutate((db) => {
     const uid = currentUserId();
     db.channels.push({
       id: newId(), userId: uid, createdAt: nowIso(), name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, ""),
@@ -217,7 +224,7 @@ export async function addChannelAction(f: FormData) {
 export async function upsertTemplateAction(f: FormData) {
   const channelId = str(f, "channelId");
   const platform = str(f, "platform") as Platform;
-  mutate((db) => {
+  await mutate((db) => {
     const uid = currentUserId();
     if (!db.channels.some((c) => c.id === channelId && c.userId === uid) || !PLATFORMS.includes(platform)) return;
     let tpl = db.templates.find((x) => x.userId === uid && x.channelId === channelId && x.platform === platform);
@@ -243,7 +250,7 @@ export async function upsertRuleAction(f: FormData) {
   const days = f.getAll("days").map(Number).filter((d) => d >= 0 && d <= 6);
   const platforms = f.getAll("platforms").map(String).filter((p): p is Platform => PLATFORMS.includes(p as Platform));
   if (!times.length || !days.length || !platforms.length) back("/queue", "A rule needs at least one valid time, day and platform.", true);
-  mutate((db) => {
+  await mutate((db) => {
     const uid = currentUserId();
     const channelId = str(f, "channelId");
     if (!db.channels.some((c) => c.id === channelId && c.userId === uid)) return;
@@ -258,13 +265,50 @@ export async function upsertRuleAction(f: FormData) {
 
 export async function deleteRuleAction(f: FormData) {
   const ruleId = str(f, "ruleId");
-  mutate((db) => { db.queueRules = db.queueRules.filter((r) => !(r.id === ruleId && r.userId === currentUserId())); });
+  await mutate((db) => { db.queueRules = db.queueRules.filter((r) => !(r.id === ruleId && r.userId === currentUserId())); });
   done(["/queue", "/"]);
   back("/queue");
 }
 
 export async function markAllReadAction() {
-  mutate((db) => db.notifications.filter((n) => n.userId === currentUserId()).forEach((n) => (n.read = true)));
+  await mutate((db) => db.notifications.filter((n) => n.userId === currentUserId()).forEach((n) => (n.read = true)));
   done(["/notifications"]);
   back("/notifications");
+}
+
+/* ── Connections ────────────────────────────── */
+
+/** Saves an Instagram access token (encrypted) after checking with Instagram that it works. */
+export async function connectInstagramAction(f: FormData) {
+  const channelId = str(f, "channelId");
+  const token = str(f, "token").replace(/\s+/g, "");
+  if (!token) return back("/channels", "Pega el token de Instagram.", true);
+  const who = await inspectToken(token).catch(() => null);
+  if (!who) return back("/channels", "No he podido contactar con Instagram. Inténtalo de nuevo.", true);
+  if (!who.ok) return back("/channels", who.error, true);
+  let encrypted: string;
+  try { encrypted = encryptToken(token); } catch { return back("/channels", "Falta TOKEN_ENCRYPTION_KEY en el servidor, así que no puedo guardar el token de forma segura.", true); }
+
+  const saved = await mutate((db) => {
+    const channel = db.channels.find((c) => c.id === channelId && c.userId === currentUserId());
+    if (!channel) return false;
+    const data = { handle: who.username ? `@${who.username}` : "Instagram", tokenEncrypted: encrypted, externalUserId: who.userId, tokenIssuedAt: nowIso(), connected: true };
+    const acc = channel.accounts.find((a) => a.platform === "instagram");
+    if (acc) Object.assign(acc, data);
+    else channel.accounts.push({ platform: "instagram", ...data });
+    return true;
+  });
+  done(["/channels", "/create"]);
+  back("/channels", saved ? `Instagram conectado: ${who.username ? `@${who.username}` : "cuenta"}.` : "No se ha encontrado la cuenta.", !saved);
+}
+
+export async function disconnectAccountAction(f: FormData) {
+  const channelId = str(f, "channelId");
+  const platform = str(f, "platform") as Platform;
+  await mutate((db) => {
+    const acc = db.channels.find((c) => c.id === channelId && c.userId === currentUserId())?.accounts.find((a) => a.platform === platform);
+    if (acc) Object.assign(acc, { connected: false, tokenEncrypted: undefined, externalUserId: undefined, tokenIssuedAt: undefined });
+  });
+  done(["/channels", "/create"]);
+  back("/channels", "Cuenta desconectada.");
 }

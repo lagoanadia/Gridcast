@@ -1,9 +1,11 @@
-import type { Platform, Post, Template, Video } from "../types";
+import type { Platform, PlatformAccount, Post, Template, Video } from "../types";
 
 export interface PublishRequest {
   post: Post;
   video: Video;
   template?: Template;
+  /** The connected account of this platform on the post's channel, if any (holds the encrypted token). */
+  account?: PlatformAccount;
   /** Absolute path or signed URL of the media file. */
   mediaUrl: string;
 }

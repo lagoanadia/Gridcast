@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   const origin = appOrigin(req);
   const channelId = new URL(req.url).searchParams.get("channelId") ?? "";
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const { db } = getData();
+  const { db } = await getData();
   if (!clientId || !process.env.GOOGLE_CLIENT_SECRET) return NextResponse.redirect(`${origin}/channels?err=${encodeURIComponent("Google no está configurado en este servidor (faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET).")}`);
   if (!db.channels.some((c) => c.id === channelId)) return NextResponse.redirect(`${origin}/channels?err=${encodeURIComponent("No se ha encontrado la cuenta.")}`);
 

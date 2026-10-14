@@ -5,16 +5,17 @@ import { MediaThumb } from "@/components/Media";
 import { Uploader } from "@/components/Uploader";
 import { getData } from "@/lib/data";
 import { DATE_LOCALE, t } from "@/lib/i18n";
+import { mediaStorageEnabled } from "@/lib/media-storage";
 import { PLATFORMS, VIDEO_STATUSES } from "@/lib/types";
 
-// Vercel functions reject request bodies over ~4.5 MB; direct-to-storage uploads arrive with Supabase (Phase 1b).
+// Without cloud storage, files go through a Vercel function, which rejects bodies over ~4.5 MB.
 const MAX_MB = process.env.VERCEL ? 4 : undefined;
 
 type SP = Promise<{ channel?: string; status?: string; format?: string; platform?: string }>;
 
 export default async function Library({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
-  const { db } = getData();
+  const { db } = await getData();
   const formats = Array.from(new Set(db.videos.flatMap((v) => v.formatTags))).sort();
 
   const videos = db.videos
@@ -30,11 +31,15 @@ export default async function Library({ searchParams }: { searchParams: SP }) {
     <>
       <div className="page-head"><h1>{t("library.title")}</h1></div>
 
-      <Uploader
-        channels={db.channels.map((c) => ({ id: c.id, name: c.name }))}
-        labels={{ hint: t("library.uploadHint"), pick: t("library.pickFiles"), uploading: t("library.uploading"), uploaded: t("library.uploaded"), channel: t("library.channel"), failed: t("library.uploadFailed"), tooLarge: t("library.tooLarge", { mb: MAX_MB ?? 0 }) }}
-        maxMb={MAX_MB}
-      />
+      {mediaStorageEnabled() ? (
+        <Link href="/create" className="btn primary">{t("today.newPost")}</Link>
+      ) : (
+              <Uploader
+          channels={db.channels.map((c) => ({ id: c.id, name: c.name }))}
+          labels={{ hint: t("library.uploadHint"), pick: t("library.pickFiles"), uploading: t("library.uploading"), uploaded: t("library.uploaded"), channel: t("library.channel"), failed: t("library.uploadFailed"), tooLarge: t("library.tooLarge", { mb: MAX_MB ?? 0 }) }}
+          maxMb={MAX_MB}
+        />
+      )}
 
       <form className="filters section" method="get">
         <label className="field">{t("library.channel")}

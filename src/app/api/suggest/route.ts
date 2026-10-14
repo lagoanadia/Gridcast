@@ -6,7 +6,7 @@ import { PLATFORMS, type Platform } from "@/lib/types";
 /** "Sugerir con IA" in the Crear wizard. Never returns provider details or the key. */
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as { channelId?: string; platform?: string; title?: string; idea?: string } | null;
-  const { db } = getData();
+  const { db } = await getData();
   const channel = db.channels.find((c) => c.id === body?.channelId);
   const platform = PLATFORMS.includes(body?.platform as Platform) ? (body!.platform as Platform) : "instagram";
   if (!channel) return NextResponse.json({ ok: false, reason: "not_found" }, { status: 400 });

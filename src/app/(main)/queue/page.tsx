@@ -42,7 +42,7 @@ function RuleForm({ rule, channels }: { rule?: QueueRule; channels: { id: string
 
 export default async function QueuePage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const sp = await searchParams;
-  const { db } = getData();
+  const { db } = await getData();
   const channels = db.channels.map((c) => ({ id: c.id, name: c.name }));
   return (
     <>

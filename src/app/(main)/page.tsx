@@ -3,7 +3,6 @@ import { approveAllAction, fillQueueAction, retryVideoAction, runDueAction } fro
 import { Flash } from "@/components/Flash";
 import { fmtDateTime } from "@/components/Pills";
 import { MediaThumb } from "@/components/Media";
-import { CONTENT_FOLDER_LABEL } from "@/config";
 import { getData, isDryRun } from "@/lib/data";
 import { DATE_LOCALE, t } from "@/lib/i18n";
 import { queueDaysLeft } from "@/lib/scheduler";
@@ -69,7 +68,7 @@ function ContentBar({ channel, days, showName }: { channel: Channel; days: numbe
 
 export default async function Today({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
-  const { db } = getData();
+  const { db } = await getData();
   const now = new Date();
   const cards = buildCards(db, now);
   const shown = cards.slice(0, MAX_CARDS);
@@ -84,10 +83,6 @@ export default async function Today({ searchParams }: { searchParams: SP }) {
           <p className="next-line">{next ? <>{t("today.nextPost")} <strong>{next}</strong></> : t("today.nextNone")}</p>
         </div>
         <div className="head-side">
-          <span className="folder-chip" title={t("today.folderHint")}>
-            <Icon d={<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5Z" />} />
-            <span>{t("today.folder")}<br />{CONTENT_FOLDER_LABEL}</span>
-          </span>
           {isDryRun() && <div className="dry-banner">{t("common.dryRunBanner")}</div>}
         </div>
       </div>

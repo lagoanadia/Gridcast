@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   try { encrypted = encryptToken(JSON.stringify(tokens)); } catch { return back("err", "Falta TOKEN_ENCRYPTION_KEY en este servidor, así que no puedo guardar la conexión de forma segura."); }
 
   const uid = currentUserId();
-  const saved = mutate((db) => {
+  const saved = await mutate((db) => {
     const channel = db.channels.find((c) => c.id === channelId && c.userId === uid);
     if (!channel) return false;
     const acc = channel.accounts.find((a) => a.platform === "youtube");

@@ -148,7 +148,8 @@ export async function runDuePublishes(db: Database, publisher: Publisher, now: D
 
     post.status = "publishing";
     post.attempts += 1;
-    const res = await publisher.publish({ post, video, template, mediaUrl: mediaUrl(video) });
+    const account = channel?.accounts.find((a) => a.platform === post.platform);
+    const res = await publisher.publish({ post, video, template, account, mediaUrl: mediaUrl(video) });
     if (res.ok) {
       Object.assign(post, { status: "published", externalId: res.externalId, externalUrl: res.externalUrl, publishedAt: now.toISOString(), dryRun: res.dryRun, error: undefined, nextAttemptAt: undefined });
       results.push({ postId: post.id, ok: true });

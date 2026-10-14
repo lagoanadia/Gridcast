@@ -8,7 +8,8 @@ import { PLATFORMS, type MediaType, type Platform, type Post, type Video } from 
 
 export type WizardChannel = {
   id: string; name: string; timezone: string; slug: string;
-  accounts: { platform: Platform; handle: string; connected: boolean }[];
+  /** One entry per network: can it be used now, and if not, why. */
+  networks: { platform: Platform; handle?: string; available: boolean; note?: "soon" | "connect" }[];
   fixedHashtags: string[];
 };
 
@@ -36,9 +37,29 @@ function probe(file: File, type: MediaType): Promise<Meta> {
   });
 }
 
+/** Instagram only accepts JPEG photos, so PNG, WebP and the like are converted here, before upload. */
+async function toJpeg(file: File): Promise<File | null> {
+  if (file.type === "image/jpeg") return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = bmp.width;
+    canvas.height = bmp.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#fff"; // transparent PNGs would turn black otherwise
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bmp, 0, 0);
+    const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.92));
+    return blob ? new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" }) : null;
+  } catch {
+    return null;
+  }
+}
+
 const NetName = ({ p }: { p: Platform }) => <>{t(`platform.${p}`)}</>;
 
-export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; maxMb?: number }) {
+export function CreateWizard({ channels, maxMb, cloud }: { channels: WizardChannel[]; maxMb?: number; cloud?: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(0);
@@ -76,15 +97,21 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
   // Changing account resets the networks (each account has its own) and offers its fixed hashtags.
   useEffect(() => {
     if (!channel) return;
-    const offered = channel.accounts.map((a) => a.platform).filter((p) => (mediaType === "image" ? p !== "youtube" : true));
+    const offered = channel.networks.filter((n) => n.available).map((n) => n.platform).filter((p) => (mediaType === "image" ? p !== "youtube" : true));
     setPlatforms((offered.includes("instagram") ? ["instagram"] : offered.slice(0, 1)) as Platform[]);
     setTags(channel.fixedHashtags.slice(0, 3));
   }, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function pick(f: File | undefined) {
-    if (!f) return;
-    const type: MediaType | null = f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "image" : null;
+  async function pick(picked: File | undefined) {
+    if (!picked) return;
+    const type: MediaType | null = picked.type.startsWith("video/") ? "video" : picked.type.startsWith("image/") ? "image" : null;
     if (!type) return setFileError(t("create.content.unsupported"));
+    let f = picked;
+    if (type === "image") {
+      const jpeg = await toJpeg(picked);
+      if (!jpeg) return setFileError(t("create.content.badImage"));
+      f = jpeg;
+    }
     if (maxMb && f.size > maxMb * 1024 * 1024) return setFileError(t("create.content.tooLarge", { mb: maxMb }));
     setFileError("");
     setFile(f);
@@ -147,7 +174,6 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
     setSending(true);
     setError([]);
     const fd = new FormData();
-    fd.set("file", file);
     fd.set("channelId", channelId);
     fd.set("meta", JSON.stringify(meta));
     fd.set("title", title);
@@ -156,6 +182,28 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
     fd.set("platforms", platforms.join(","));
     fd.set("mode", m);
     fd.set("whenLocal", whenLocal);
+    if (cloud) {
+      // Send the file straight to cloud storage, then tell the server where it is.
+      try {
+        const signRes = await fetch("/api/upload/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, contentType: file.type }) });
+        const sign = await signRes.json().catch(() => null);
+        if (!sign?.ok) { setError([t(`create.error.${sign?.reason ?? "storage_error"}`)]); setSending(false); return; }
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(sign.url, sign.anonKey, { auth: { persistSession: false } });
+        const up = await supabase.storage.from(sign.bucket).uploadToSignedUrl(sign.path, sign.token, file, { contentType: file.type });
+        if (up.error) { setError([`${t("create.error.upload_failed")} ${up.error.message}`]); setSending(false); return; }
+        fd.set("uploadedPath", sign.path);
+        fd.set("fileName", file.name);
+        fd.set("fileSize", String(file.size));
+        fd.set("mediaType", mediaType);
+      } catch {
+        setError([t("create.error.upload_failed")]);
+        setSending(false);
+        return;
+      }
+    } else {
+      fd.set("file", file);
+    }
     try {
       const res = await fetch("/api/create", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({ ok: false, reason: "network" }));
@@ -318,16 +366,16 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
             <span className="label">{t("create.where.networks")}</span>
             <div className="grid grid-2" style={{ gap: 12 }}>
               {PLATFORMS.map((p) => {
-                const acc = channel?.accounts.find((a) => a.platform === p);
+                const acc = channel?.networks.find((n) => n.platform === p);
                 const on = platforms.includes(p);
                 const list = issues[p] ?? [];
                 const photoBlocked = mediaType === "image" && p === "youtube";
                 return (
-                  <div key={p} className={`net-card ${on ? "on" : ""} ${!acc || photoBlocked ? "off" : ""}`}>
+                  <div key={p} className={`net-card ${on ? "on" : ""} ${!acc?.available || photoBlocked ? "off" : ""}`}>
                     <label className="check">
-                      <input type="checkbox" checked={on} disabled={!acc || photoBlocked} onChange={() => setPlatforms(toggle(platforms, p))} />
+                      <input type="checkbox" checked={on} disabled={!acc?.available || photoBlocked} onChange={() => setPlatforms(toggle(platforms, p))} />
                       <span className={`net ${p}`} aria-hidden="true">{p === "youtube" ? "YT" : p === "tiktok" ? "TT" : "IG"}</span>
-                      <span><strong><NetName p={p} /></strong><br /><span className="small muted">{acc ? acc.handle : t("create.where.notConnected")}</span></span>
+                      <span><strong><NetName p={p} /></strong><br /><span className="small muted">{acc?.available ? (acc.handle ?? "") : acc?.note ? t(`create.where.${acc.note}`) : t("create.where.notConnected")}</span></span>
                     </label>
                     {on && (
                       <>

@@ -13,7 +13,8 @@ function mimeOf(fileName: string | undefined, mediaType: string | undefined) {
 /** Streams a stored video or photo with HTTP range support (needed for seeking in <video>). */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const video = loadDb().videos.find((v) => v.id === id && v.userId === currentUserId());
+  const video = (await loadDb()).videos.find((v) => v.id === id && v.userId === currentUserId());
+  if (video?.mediaUrl) return Response.redirect(video.mediaUrl, 302);
   if (!video?.filePath || video.filePath.startsWith("demo://")) return new Response("Not found", { status: 404 });
 
   let size: number;
