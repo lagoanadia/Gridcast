@@ -237,7 +237,17 @@
       "hashtags": "Hashtags",
       "hashtagAdd": "Añadir hashtag",
       "hashtagPlaceholder": "escribe y pulsa Intro",
-      "ai": "Sugerir con IA (próximamente)"
+      "ai": "Sugerir con IA",
+      "aiLoading": "Pensando…",
+      "aiHint": "Escribe una idea en la descripción y la mejoro, o pulsa sin nada y me invento algo con el título.",
+      "aiUse": "Usar este texto",
+      "aiTitle": "Tres propuestas",
+      "aiErr": {
+        "not_configured": "La IA todavía no está activada en este servidor (falta GROQ_API_KEY).",
+        "provider_error": "El servicio de IA no ha respondido. Inténtalo de nuevo en un momento.",
+        "bad_answer": "La IA no ha dado una respuesta útil. Prueba otra vez.",
+        "not_found": "No se ha encontrado la cuenta."
+      }
     },
     "where": {
       "title": "¿Dónde lo publicamos?",

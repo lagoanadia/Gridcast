@@ -63,6 +63,10 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
   const [style, setStyle] = useState<PromptStyle>("realista");
   const [format, setFormat] = useState<PromptFormat>("vertical");
   const [copied, setCopied] = useState(false);
+  // AI caption suggestions
+  const [ai, setAi] = useState<{ description: string; hashtags: string[] }[]>([]);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const channel = channels.find((c) => c.id === channelId);
   const prompt = useMemo(() => buildImagePrompt({ idea, style, format }), [idea, style, format]);
@@ -90,6 +94,23 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim());
     // YouTube has no photos: drop it when the file is an image.
     setPlatforms((cur) => (type === "image" ? cur.filter((p) => p !== "youtube") : cur));
+  }
+
+  async function suggest() {
+    setAiBusy(true);
+    setAiError("");
+    try {
+      const res = await fetch("/api/suggest", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId, platform: platforms[0] ?? "instagram", title, idea: description }),
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.ok) setAi(data.suggestions);
+      else setAiError(t(`create.text.aiErr.${data?.reason ?? "provider_error"}`));
+    } catch {
+      setAiError(t("create.text.aiErr.provider_error"));
+    }
+    setAiBusy(false);
   }
 
   const addTag = () => {
@@ -262,7 +283,25 @@ export function CreateWizard({ channels, maxMb }: { channels: WizardChannel[]; m
                 <button type="button" className="btn sm" onClick={addTag}>{t("create.text.hashtagAdd")}</button>
               </div>
             </div>
-            <button type="button" className="btn sm" disabled style={{ alignSelf: "flex-start" }}>{t("create.text.ai")}</button>
+            <div className="stack" style={{ gap: 10 }}>
+              <div className="row">
+                <button type="button" className="btn sm ochre" disabled={aiBusy} onClick={suggest}>✨ {aiBusy ? t("create.text.aiLoading") : t("create.text.ai")}</button>
+                <span className="small muted">{t("create.text.aiHint")}</span>
+              </div>
+              {aiError && <div className="flash error" role="alert" style={{ margin: 0 }}>{aiError}</div>}
+              {ai.length > 0 && (
+                <div className="stack" style={{ gap: 8 }}>
+                  <span className="label">{t("create.text.aiTitle")}</span>
+                  {ai.map((s, i) => (
+                    <div key={i} className="prompt-box">
+                      <p>{s.description}</p>
+                      <span className="small muted">{s.hashtags.map((h) => `#${h}`).join(" ")}</span>
+                      <button type="button" className="btn sm primary" onClick={() => { setDescription(s.description); setTags(Array.from(new Set([...tags, ...s.hashtags]))); }}>{t("create.text.aiUse")}</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
