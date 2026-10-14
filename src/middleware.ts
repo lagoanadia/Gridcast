@@ -22,6 +22,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Public: login, PWA assets, Next internals, and the cron endpoint (it has its own CRON_SECRET).
-  matcher: ["/((?!login|offline|api/cron|_next/|icons/|sw\\.js|manifest\\.webmanifest|icon\\.svg|favicon\\.ico).*)"],
+  // Public: login, PWA assets, Next internals, the cron endpoint (it has its own CRON_SECRET)
+  // and TikTok's site-verification file (tiktok<token>.txt), which TikTok fetches without a session.
+  matcher: ["/((?!login|offline|api/cron|_next/|icons/|sw\\.js|manifest\\.webmanifest|icon\\.svg|favicon\\.ico|tiktok[A-Za-z0-9]+\\.txt).*)"],
 };
