@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarBoard, type CalChip, type CalDay } from "@/components/CalendarBoard";
 import { getData, isDryRun } from "@/lib/data";
-import { t } from "@/lib/i18n";
+import { DATE_LOCALE, t } from "@/lib/i18n";
 import { addDaysYmd, zonedParts } from "@/lib/time";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -38,7 +38,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   });
   const heads = Array.from({ length: 7 }, (_, i) => {
     const d = addDaysYmd(start.y, start.m, start.d, i);
-    return new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC", ...(view === "week" ? { day: "numeric", month: "short" } : {}) }).format(new Date(Date.UTC(d.y, d.m - 1, d.d)));
+    return new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "short", timeZone: "UTC", ...(view === "week" ? { day: "numeric", month: "short" } : {}) }).format(new Date(Date.UTC(d.y, d.m - 1, d.d)));
   });
 
   // Group platform versions of the same video at the same time into one chip.
@@ -68,7 +68,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     return `/calendar?${new URLSearchParams({ view, date: key(d.y, d.m, d.d), ...(sp.channel ? { channel: sp.channel } : {}) })}`;
   };
   const viewHref = (v: string) => `/calendar?${new URLSearchParams({ view: v, date: key(ay, am, ad), ...(sp.channel ? { channel: sp.channel } : {}) })}`;
-  const title = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(ay, am - 1, view === "week" ? ad : 1)));
+  const title = new Intl.DateTimeFormat(DATE_LOCALE, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(ay, am - 1, view === "week" ? ad : 1)));
 
   return (
     <>

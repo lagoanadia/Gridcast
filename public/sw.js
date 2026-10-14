@@ -5,7 +5,7 @@
  * - /api/* and non-GET requests (uploads, server actions) are never intercepted:
  *   approving or publishing must always hit the server.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = `gridcast-static-${VERSION}`;
 const PAGES = `gridcast-pages-${VERSION}`;
 const PRECACHE = ["/offline", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];

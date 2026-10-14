@@ -106,6 +106,22 @@ export function syncVideoStatus(db: Database, videoId: string) {
   else video.status = "ready";
 }
 
+/** Put a video's failed posts back in the approved queue, due now, so the next publish run retries them. */
+export function retryFailedPosts(db: Database, userId: string, videoId: string, now: Date) {
+  let n = 0;
+  for (const p of db.posts) {
+    if (p.userId !== userId || p.videoId !== videoId || p.status !== "failed") continue;
+    p.status = "scheduled";
+    p.scheduledAt = now.toISOString();
+    p.attempts = 0;
+    p.error = undefined;
+    p.nextAttemptAt = undefined;
+    n++;
+  }
+  if (n) syncVideoStatus(db, videoId);
+  return n;
+}
+
 /** Publish every approved post whose time has come. Handles retries with backoff. */
 export async function runDuePublishes(db: Database, publisher: Publisher, now: Date, mediaUrl: (v: Video) => string) {
   const due = db.posts.filter(

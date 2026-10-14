@@ -1,4 +1,4 @@
-import { t } from "@/lib/i18n";
+import { DATE_LOCALE, t } from "@/lib/i18n";
 import type { Platform, PostStatus, VideoStatus } from "@/lib/types";
 
 export const VideoStatusPill = ({ s }: { s: VideoStatus }) => <span className={`pill ${s}`}>{t(`videoStatus.${s}`)}</span>;
@@ -13,5 +13,5 @@ export function fmtDuration(sec?: number) {
 
 export function fmtDateTime(iso: string | undefined, tz: string) {
   if (!iso) return "–";
-  return new Intl.DateTimeFormat("en-GB", { timeZone: tz, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(DATE_LOCALE, { timeZone: tz, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 }

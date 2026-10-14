@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { hasErrors, validatePost } from "@/lib/platforms";
 import { getPublisher } from "@/lib/publisher";
-import { approvePost, checkLowQueue, fillQueue, movePost, runDuePublishes, syncVideoStatus, unschedulePost } from "@/lib/services";
+import { approvePost, checkLowQueue, fillQueue, movePost, retryFailedPosts, runDuePublishes, syncVideoStatus, unschedulePost } from "@/lib/services";
 import { currentUserId, loadDb, mutate, newId, nowIso, saveDb } from "@/lib/store";
 import { buildPostDraft } from "@/lib/templates";
 import { PLATFORMS, type Platform, type Post, type VideoStatus } from "@/lib/types";
@@ -30,7 +30,7 @@ export async function fillQueueAction() {
     return created;
   });
   done(["/", "/calendar"]);
-  back("/", t("dashboard.filled", { n }));
+  back("/", t("today.filled", { n }));
 }
 
 export async function runDueAction() {
@@ -39,7 +39,18 @@ export async function runDueAction() {
   checkLowQueue(db, currentUserId(), new Date());
   saveDb(db);
   done(["/", "/calendar", "/notifications"]);
-  back("/", t("dashboard.ran", { ok: res.filter((r) => r.ok).length, failed: res.filter((r) => !r.ok).length }));
+  back("/", t("today.ran", { ok: res.filter((r) => r.ok).length, failed: res.filter((r) => !r.ok).length }));
+}
+
+/** "Reintentar" on a failed card: re-queue its failed posts and publish them right away. */
+export async function retryVideoAction(f: FormData) {
+  const videoId = str(f, "videoId");
+  const db = loadDb();
+  const n = retryFailedPosts(db, currentUserId(), videoId, new Date());
+  if (n) await runDuePublishes(db, getPublisher(), new Date(), (v) => v.filePath ?? "");
+  saveDb(db);
+  done(["/", "/calendar", "/notifications"]);
+  back("/", t("today.retried"));
 }
 
 export async function approveAction(f: FormData) {
@@ -55,7 +66,7 @@ export async function approveAllAction() {
     return db.posts.filter((p) => p.userId === uid && p.status === "proposed").reduce((acc, p) => acc + (approvePost(db, uid, p.id).ok ? 1 : 0), 0);
   });
   done(["/", "/calendar"]);
-  back("/", t("dashboard.approvedN", { n }));
+  back("/", t("today.approvedN", { n }));
 }
 
 export async function unscheduleAction(f: FormData) {

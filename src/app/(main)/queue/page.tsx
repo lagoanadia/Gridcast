@@ -1,12 +1,12 @@
 import { deleteRuleAction, upsertRuleAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
 import { getData } from "@/lib/data";
-import { t } from "@/lib/i18n";
+import { DATE_LOCALE, t } from "@/lib/i18n";
 import { videosPerDay } from "@/lib/scheduler";
 import { PLATFORMS, type QueueRule } from "@/lib/types";
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
-const dayName = (d: number) => new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2026, 0, 4 + d)));
+const dayName = (d: number) => new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2026, 0, 4 + d)));
 
 function RuleForm({ rule, channels }: { rule?: QueueRule; channels: { id: string; name: string }[] }) {
   return (

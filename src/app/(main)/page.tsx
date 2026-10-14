@@ -1,139 +1,150 @@
 import Link from "next/link";
-import { approveAction, approveAllAction, fillQueueAction, runDueAction, unscheduleAction } from "@/app/actions";
+import { approveAllAction, fillQueueAction, retryVideoAction, runDueAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
-import { fmtDateTime, PlatformPill } from "@/components/Pills";
-import { Ridge } from "@/components/Ridge";
+import { fmtDateTime } from "@/components/Pills";
+import { PrintScene } from "@/components/PrintScene";
+import { CONTENT_FOLDER_LABEL } from "@/config";
 import { getData, isDryRun } from "@/lib/data";
-import { t } from "@/lib/i18n";
-import { hasErrors, validatePost } from "@/lib/platforms";
+import { DATE_LOCALE, t } from "@/lib/i18n";
 import { queueDaysLeft } from "@/lib/scheduler";
-import { addDaysYmd, zonedParts } from "@/lib/time";
-import type { Channel, Post } from "@/lib/types";
+import type { Channel, Database, Platform, Post, Video } from "@/lib/types";
 
 type SP = Promise<{ msg?: string; err?: string }>;
-const RIDGE_DAYS = 14;
+type CardStatus = "draft" | "scheduled" | "published" | "error";
 
-/** Distinct videos per local day for the next RIDGE_DAYS days, split by approval state. */
-function ridgeDays(channel: Channel, posts: Post[], now: Date) {
-  const today = zonedParts(now, channel.timezone);
-  const keys = Array.from({ length: RIDGE_DAYS }, (_, i) => {
-    const d = addDaysYmd(today.y, today.m, today.d, i);
-    return `${d.y}-${d.m}-${d.d}`;
-  });
-  const days = keys.map(() => ({ approved: new Set<string>(), proposed: new Set<string>() }));
-  for (const p of posts) {
-    if (p.channelId !== channel.id || !p.scheduledAt || !["proposed", "scheduled", "publishing", "published"].includes(p.status)) continue;
-    const z = zonedParts(new Date(p.scheduledAt), channel.timezone);
-    const i = keys.indexOf(`${z.y}-${z.m}-${z.d}`);
-    if (i === -1) continue;
-    (p.status === "proposed" ? days[i].proposed : days[i].approved).add(p.videoId);
-  }
-  return days.map((d) => ({ approved: d.approved.size, proposed: [...d.proposed].filter((v) => !d.approved.has(v)).length }));
+const MAX_CARDS = 12;
+const NET_LABEL: Record<Platform, string> = { youtube: "YT", tiktok: "TT", instagram: "IG" };
+
+/** One card per piece of content: its state is the "worst" state of its platform versions. */
+function cardStatus(posts: Post[]): CardStatus {
+  if (posts.some((p) => p.status === "failed")) return "error";
+  if (posts.length > 0 && posts.every((p) => p.status === "published")) return "published";
+  if (posts.some((p) => p.status === "scheduled" || p.status === "publishing" || p.status === "published")) return "scheduled";
+  return "draft";
 }
 
-export default async function Dashboard({ searchParams }: { searchParams: SP }) {
+function buildCards(db: Database, now: Date) {
+  const cards = db.videos.map((video) => {
+    const posts = db.posts.filter((p) => p.videoId === video.id && p.status !== "cancelled");
+    const status = cardStatus(posts);
+    const times = posts.map((p) => p.scheduledAt).filter((x): x is string => !!x).sort();
+    const upcoming = times.find((x) => new Date(x) > now);
+    const when = status === "published" ? posts.map((p) => p.publishedAt ?? p.scheduledAt).filter(Boolean).sort().pop() : (upcoming ?? times[0]);
+    return { video, posts, status, when, channel: db.channels.find((c) => c.id === video.channelId)! };
+  });
+  const rank = { error: 0, scheduled: 1, draft: 1, published: 2 } as const;
+  return cards.sort((a, b) => rank[a.status] - rank[b.status] || (a.when ?? "9").localeCompare(b.when ?? "9") || b.video.createdAt.localeCompare(a.video.createdAt));
+}
+
+function nextPublication(db: Database, now: Date) {
+  const post = db.posts
+    .filter((p) => (p.status === "scheduled" || p.status === "proposed") && p.scheduledAt && new Date(p.scheduledAt) > now)
+    .sort((a, b) => (a.status === b.status ? 0 : a.status === "scheduled" ? -1 : 1) || a.scheduledAt!.localeCompare(b.scheduledAt!))[0];
+  if (!post) return null;
+  const channel = db.channels.find((c) => c.id === post.channelId)!;
+  const when = new Intl.DateTimeFormat(DATE_LOCALE, { timeZone: channel.timezone, weekday: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(post.scheduledAt!));
+  const handle = channel.accounts.find((a) => a.platform === post.platform)?.handle ?? `@${channel.slug}`;
+  return t("today.nextPostIn", { when, handle });
+}
+
+const Icon = ({ d, size }: { d: React.ReactNode; size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">{d}</svg>
+);
+
+function Thumb({ video }: { video: Video }) {
+  const real = video.filePath && !video.filePath.startsWith("demo://");
+  return real ? <video src={`/api/media/${video.id}#t=0.5`} preload="metadata" muted /> : <PrintScene seed={video.id} />;
+}
+
+function ContentBar({ channel, days, showName }: { channel: Channel; days: number | null; showName: boolean }) {
+  const low = days !== null && days < channel.lowQueueThresholdDays;
+  const label = showName ? t("today.contentForChannel", { channel: channel.name }) : t("today.contentFor");
+  return (
+    <div className={`content-bar ${low ? "low" : ""}`} role={low ? "status" : undefined}>
+      {days === null ? <span>{t("today.noRules")}</span> : (
+        <>
+          <span>{label}</span>
+          <strong>{days === 1 ? t("today.oneDay") : t("today.days", { n: days })}</strong>
+          {low && <span className="stamp-mark">{t("today.lowQueue")}</span>}
+        </>
+      )}
+    </div>
+  );
+}
+
+export default async function Today({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const { db } = getData();
   const now = new Date();
-  const tz = db.channels[0]?.timezone ?? "UTC";
-  const pending = db.posts
-    .filter((p) => p.status === "proposed")
-    .sort((a, b) => (a.scheduledAt ?? "").localeCompare(b.scheduledAt ?? ""));
+  const cards = buildCards(db, now);
+  const shown = cards.slice(0, MAX_CARDS);
+  const next = nextPublication(db, now);
+  const pending = db.posts.filter((p) => p.status === "proposed").length;
 
   return (
     <>
-      <div className="page-head">
+      <div className="today-head">
         <div>
-          <span className="kicker">{new Intl.DateTimeFormat("en-GB", { timeZone: tz, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now)}</span>
-          <h1>{t("dashboard.title")}</h1>
+          <h1>{t("today.title")}</h1>
+          <p className="next-line">{next ? <>{t("today.nextPost")} <strong>{next}</strong></> : t("today.nextNone")}</p>
         </div>
-        <div className="stack" style={{ alignItems: "flex-end" }}>
+        <div className="head-side">
+          <span className="folder-chip" title={t("today.folderHint")}>
+            <Icon d={<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5Z" />} />
+            <span>{t("today.folder")}<br />{CONTENT_FOLDER_LABEL}</span>
+          </span>
           {isDryRun() && <div className="dry-banner">{t("common.dryRunBanner")}</div>}
-          <div className="row">
-            <form action={fillQueueAction}><button className="btn primary">{t("dashboard.fillQueue")}</button></form>
-            <form action={runDueAction}><button className="btn">{t("dashboard.runDue")}</button></form>
-          </div>
         </div>
       </div>
       <Flash sp={sp} />
 
-      <div className="grid grid-2">
-        {db.channels.map((c, idx) => {
-          const days = queueDaysLeft(c, db.queueRules, db.videos, db.posts, now);
-          const low = days !== null && days < c.lowQueueThresholdDays;
-          const next = db.posts
-            .filter((p) => p.channelId === c.id && (p.status === "scheduled" || p.status === "proposed") && p.scheduledAt && new Date(p.scheduledAt) > now)
-            .sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!))[0];
-          const ready = db.videos.filter((v) => v.channelId === c.id && v.status === "ready").length;
-          const queued = new Set(db.posts.filter((p) => p.channelId === c.id && (p.status === "scheduled" || p.status === "proposed")).map((p) => p.videoId)).size;
-          return (
-            <section key={c.id} className="card poster channel-card">
-              <div className="spread">
-                <span className="ch-label">{t("dashboard.channelNo", { n: String(idx + 1).padStart(2, "0") })}</span>
-                {c.autopilot && <span className="pill on">{t("dashboard.autopilotOn")}</span>}
-              </div>
-              <h2 style={{ marginTop: 4 }}>{c.name}</h2>
-              <div className="hero">
-                <span className={`sun ${low ? "low" : ""}`} aria-hidden="true" />
-                <span className="big-number">{days ?? "–"}</span>
-                <span className="unit">{days === null ? t("dashboard.noRules") : t("dashboard.daysLeft")}</span>
-                {low && (
-                  <span className="stamp-mark" style={{ marginLeft: "auto", alignSelf: "center" }} title={t("dashboard.lowQueueDetail", { n: c.lowQueueThresholdDays })}>
-                    {t("dashboard.lowQueue")}
-                  </span>
+      {shown.length === 0 ? (
+        <div className="empty">{t("today.empty")}</div>
+      ) : (
+        <div className="post-grid">
+          {shown.map(({ video, posts, status, when, channel }) => (
+            <div key={video.id} className={`post-card ${status === "error" ? "is-error" : ""}`}>
+              <div className="post-thumb">
+                <Link href={`/videos/${video.id}`} aria-label={video.title} style={{ display: "block", height: "100%" }}><Thumb video={video} /></Link>
+                <span className={`pill status ${status}`}>{t(`today.status.${status}`)}</span>
+                {status === "error" && (
+                  <form action={retryVideoAction} className="retry-form">
+                    <input type="hidden" name="videoId" value={video.id} />
+                    <button className="retry"><Icon d={<><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></>} />{t("today.retry")}</button>
+                  </form>
                 )}
               </div>
-              <div className="meta-line">
-                {ready} {t("dashboard.ready")} · {queued} {t("dashboard.queued")}
-              </div>
-              <div className="meta-line" style={{ marginTop: 4 }}>
-                {t("dashboard.nextPost")}: {next ? <><strong>{fmtDateTime(next.scheduledAt, c.timezone)}</strong> — {next.title}</> : <span className="muted">{t("dashboard.nothingNext")}</span>}
-              </div>
-              <Ridge days={ridgeDays(c, db.posts, now)} />
-              <div className="ridge-legend"><span>{t("dashboard.ridge", { n: RIDGE_DAYS })}</span><span>{t("dashboard.ridgeEnd", { n: RIDGE_DAYS })}</span></div>
-            </section>
-          );
-        })}
+              <Link href={`/videos/${video.id}`} className="info" style={{ textDecoration: "none" }}>
+                <span className="title">{video.title}</span>
+                <span className="nets" aria-label={Array.from(new Set(posts.map((p) => t(`platform.${p.platform}`)))).join(", ")}>
+                  {Array.from(new Set(posts.map((p) => p.platform))).map((p) => <span key={p} className={`net ${p}`} title={t(`platform.${p}`)}>{NET_LABEL[p]}</span>)}
+                </span>
+                <span className="when">{channel.name}{when ? ` · ${fmtDateTime(when, channel.timezone)}` : ""}</span>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="add-wrap">
+        <Link href="/library" className="add-btn" aria-label={t("today.newPost")}>
+          <Icon d={<path d="M12 5v14M5 12h14" />} />
+          <span>{t("today.newPost")}</span>
+        </Link>
       </div>
 
-      <section className="section">
-        <div className="spread section-title">
-          <h2>{t("dashboard.pending")} {pending.length > 0 && <span className="data" style={{ fontSize: 18, color: "var(--rust)" }}>×{pending.length}</span>}</h2>
-          {pending.length > 0 && <form action={approveAllAction}><button className="btn ink">{t("dashboard.approveAll")}</button></form>}
-        </div>
-        {pending.length === 0 ? (
-          <div className="empty">{t("dashboard.noPending")}</div>
-        ) : (
-          <div className="list">
-            {pending.map((p) => {
-              const video = db.videos.find((v) => v.id === p.videoId)!;
-              const channel = db.channels.find((c) => c.id === p.channelId)!;
-              const invalid = hasErrors(validatePost(p, video));
-              return (
-                <div key={p.id} className="spread">
-                  <div className="row">
-                    <span className="data small" style={{ minWidth: 150 }}>{fmtDateTime(p.scheduledAt, channel.timezone)}</span>
-                    <span className="dot" style={{ background: channel.color }} title={channel.name} />
-                    <PlatformPill p={p.platform} />
-                    <Link href={`/videos/${video.id}`} style={{ fontWeight: 700 }}>{p.title}</Link>
-                    {invalid && <span className="pill failed">{t("dashboard.needsFixes")}</span>}
-                  </div>
-                  <div className="row">
-                    <form action={approveAction}>
-                      <input type="hidden" name="postId" value={p.id} />
-                      <button className="btn sm primary" disabled={invalid}>{t("common.approve")}</button>
-                    </form>
-                    <form action={unscheduleAction}>
-                      <input type="hidden" name="postId" value={p.id} />
-                      <button className="btn sm ghost">{t("common.unschedule")}</button>
-                    </form>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+      <div className="content-bars">
+        {db.channels.map((c) => (
+          <ContentBar key={c.id} channel={c} days={queueDaysLeft(c, db.queueRules, db.videos, db.posts, now)} showName={db.channels.length > 1} />
+        ))}
+      </div>
+
+      <div className="quick-actions">
+        <form action={fillQueueAction}><button className="btn sm">{t("today.fillQueue")}</button></form>
+        {pending > 0 && <form action={approveAllAction}><button className="btn sm primary">{t("today.approveAll")} ({pending})</button></form>}
+        <form action={runDueAction}><button className="btn sm">{t("today.runDue")}</button></form>
+        {cards.length > MAX_CARDS && <Link href="/library" className="btn sm ghost">{t("today.viewAll")}</Link>}
+      </div>
     </>
   );
 }

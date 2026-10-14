@@ -7,7 +7,7 @@ export function getData() {
   const userId = currentUserId();
   let db = loadDb();
   if (!db.channels.some((c) => c.userId === userId)) {
-    mutate((d) => seedDb(d, userId));
+    mutate((d) => seedDb(d, userId, new Date(), true, true));
     db = loadDb();
   }
   return { userId, db: scoped(db, userId) };

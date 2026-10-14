@@ -1,6 +1,6 @@
 /**
- * A tiny screenprint landscape (sun, ridges, pines) generated from a seed.
- * Used where a video has no playable file, so every placeholder is different but on-brand.
+ * A tiny flat landscape (sun, ridges, pines) generated from a seed.
+ * Used where a video has no playable file, so every placeholder is different but on-palette.
  */
 function rand(seed: string) {
   let h = 2166136261;
@@ -9,9 +9,9 @@ function rand(seed: string) {
 }
 
 const PALETTES = [
-  { sky: "#a8c2c1", sun: "#f0a033", far: "#b8692e", near: "#4a1e10", tree: "#2e4636" },
-  { sky: "#eadcc0", sun: "#b4441f", far: "#a8c2c1", near: "#2e4636", tree: "#2a140c" },
-  { sky: "#f0a033", sun: "#f5ecdb", far: "#b4441f", near: "#4a1e10", tree: "#2a140c" },
+  { sky: "#dcd4ff", sun: "#ffd166", far: "#9b86ff", near: "#4b2fc7", tree: "#2a1a80" },
+  { sky: "#d9f0ea", sun: "#ff8a65", far: "#5cc4ad", near: "#1d7f6e", tree: "#0f4a41" },
+  { sky: "#ffe3d6", sun: "#ffffff", far: "#ff9a76", near: "#c2461f", tree: "#6b230d" },
 ];
 
 export function PrintScene({ seed }: { seed: string }) {

@@ -1,0 +1,193 @@
+{
+  "nav": {
+    "today": "Hoy",
+    "create": "Crear",
+    "calendar": "Calendario",
+    "accounts": "Cuentas",
+    "library": "Biblioteca",
+    "queue": "Reglas de cola",
+    "notifications": "Avisos"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "approve": "Aprobar",
+    "unschedule": "Quitar de la cola",
+    "all": "Todos",
+    "apply": "Aplicar",
+    "none": "Ninguno",
+    "dryRunBanner": "Modo de prueba: no se publica nada de verdad.",
+    "seconds": "{n}s",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "platform": {
+    "youtube": "YouTube",
+    "tiktok": "TikTok",
+    "instagram": "Instagram"
+  },
+  "videoStatus": {
+    "draft": "Borrador",
+    "ready": "Listo",
+    "scheduled": "Programado",
+    "published": "Publicado"
+  },
+  "postStatus": {
+    "proposed": "Pendiente de aprobar",
+    "scheduled": "Aprobada",
+    "publishing": "Publicando",
+    "published": "Publicada",
+    "failed": "Con error",
+    "cancelled": "Cancelada"
+  },
+  "today": {
+    "title": "Hoy",
+    "nextPost": "Próxima publicación:",
+    "nextPostIn": "{when} en {handle}",
+    "nextNone": "No hay nada programado",
+    "folder": "Carpeta de contenido",
+    "folderHint": "Próximamente: elegir la carpeta desde el navegador.",
+    "newPost": "Nueva publicación",
+    "status": {
+      "draft": "Borrador",
+      "scheduled": "Programada",
+      "published": "Publicada",
+      "error": "Error"
+    },
+    "retry": "Reintentar",
+    "empty": "Todavía no hay publicaciones. Pulsa + para crear la primera.",
+    "viewAll": "Ver todo el contenido",
+    "contentFor": "Tienes contenido para",
+    "contentForChannel": "{channel}: tienes contenido para",
+    "days": "{n} DÍAS",
+    "oneDay": "1 DÍA",
+    "noRules": "Sin reglas de cola todavía",
+    "lowQueue": "Se te acaba el contenido",
+    "fillQueue": "Rellenar la cola",
+    "runDue": "Publicar lo que toca",
+    "approveAll": "Aprobar todo lo válido",
+    "filled": "Se han propuesto {n} versiones.",
+    "ran": "{ok} publicadas, {failed} con error.",
+    "approvedN": "{n} aprobadas.",
+    "retried": "Reintentando la publicación."
+  },
+  "library": {
+    "title": "Biblioteca",
+    "upload": "Subir vídeos",
+    "uploadHint": "Arrastra aquí vídeos verticales o elige varios a la vez. La duración y el tamaño se leen solos.",
+    "uploading": "Subiendo {done}/{total}…",
+    "uploaded": "{n} subidos.",
+    "channel": "Cuenta",
+    "status": "Estado",
+    "format": "Formato",
+    "platform": "Red",
+    "empty": "Ningún vídeo coincide con estos filtros.",
+    "markReady": "Marcar como listo",
+    "backToDraft": "Volver a borrador",
+    "expires": "Caduca {date}",
+    "pickFiles": "Elegir archivos",
+    "uploadFailed": "{n} fallaron: {reason}",
+    "tooLarge": "más de {mb} MB, todavía no se admite en este despliegue"
+  },
+  "video": {
+    "details": "Detalles",
+    "title": "Título",
+    "description": "Descripción",
+    "formatTags": "Etiquetas de formato",
+    "formatTagsHint": "Separadas por comas, por ejemplo: plano, con voz, corto",
+    "expiresAt": "Vigente hasta",
+    "transcript": "Transcripción",
+    "transcriptSoon": "La transcripción automática llegará en la fase 3.",
+    "versions": "Versiones por red",
+    "noVersions": "Todavía no hay versiones por red. Marca el vídeo como listo y rellena la cola, o crea una ahora:",
+    "createVersion": "Crear versión de {platform}",
+    "hashtags": "Hashtags",
+    "scheduledAt": "Programada",
+    "chars": "{n}/{max}",
+    "deleteConfirm": "¿Eliminar este vídeo y sus versiones por red?",
+    "dimensions": "{w}×{h}",
+    "noFile": "Sin archivo"
+  },
+  "validation": {
+    "aspect": "No es 9:16 ({w}×{h}).",
+    "aspectUnknown": "Se desconocen las dimensiones: no se puede confirmar que sea 9:16.",
+    "duration": "Demasiado largo: {actual}s (máximo {max}s).",
+    "durationUnknown": "Se desconoce la duración.",
+    "noFile": "No hay archivo de vídeo.",
+    "fileSize": "Archivo demasiado grande (máximo {maxMb} MB).",
+    "titleEmpty": "El título está vacío.",
+    "titleLength": "Título demasiado largo: {actual}/{max}.",
+    "descriptionLength": "Texto demasiado largo: {actual}/{max}.",
+    "hashtags": "Demasiados hashtags: {actual} (máximo {max}).",
+    "expired": "Está programado para después de que el contenido deje de estar vigente."
+  },
+  "calendar": {
+    "title": "Calendario",
+    "week": "Semana",
+    "month": "Mes",
+    "today": "Hoy",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "dragHint": "Arrastra un vídeo a otro día para moverlo. Lo movido hay que volver a aprobarlo, salvo con el piloto automático.",
+    "timezone": "Horas en {tz}",
+    "needsApproval": "falta OK"
+  },
+  "queue": {
+    "title": "Reglas de cola",
+    "intro": "Las reglas deciden cuándo sale cada vídeo listo. La cola rellena los huecos libres por orden de subida.",
+    "times": "Horas (HH:MM, separadas por comas)",
+    "days": "Días",
+    "platforms": "Redes",
+    "active": "Activa",
+    "add": "Añadir regla",
+    "perDay": "{n} al día",
+    "summary": "{channel}: {times} los {days} → {platforms}"
+  },
+  "channels": {
+    "title": "Cuentas y plantillas",
+    "name": "Nombre",
+    "timezone": "Zona horaria",
+    "autopilot": "Piloto automático",
+    "autopilotHint": "Publicar lo que está en cola sin preguntarme antes.",
+    "threshold": "Aviso de cola corta (días)",
+    "accounts": "Cuentas conectadas",
+    "notConnected": "Sin conectar (fase 2)",
+    "templates": "Plantillas",
+    "fixedHashtags": "Hashtags fijos",
+    "footer": "Pie de la descripción",
+    "category": "Id de categoría de YouTube",
+    "language": "Idioma",
+    "madeForKids": "Contenido para niños",
+    "playlist": "Id de la lista de reproducción",
+    "tone": "Tono de voz",
+    "addChannel": "Añadir cuenta"
+  },
+  "notifications": {
+    "title": "Avisos",
+    "empty": "Todo tranquilo.",
+    "markRead": "Marcar todo como leído",
+    "kind": {
+      "low_queue": "Cola corta",
+      "publish_failed": "Con error",
+      "publish_retry": "Reintentando",
+      "expired": "Caducado",
+      "expiry": "Caducado"
+    }
+  },
+  "pwa": {
+    "install": "Instalar app",
+    "offlineTitle": "Sin conexión",
+    "offlineBody": "GridCast necesita conexión para cargar tu cola. Las páginas que abriste hace poco siguen funcionando.",
+    "retry": "Reintentar"
+  },
+  "deploy": {
+    "ephemeral": "Versión de prueba: los datos son temporales y se borran. Conecta Supabase para conservarlos."
+  },
+  "auth": {
+    "password": "Contraseña",
+    "signIn": "Entrar",
+    "wrong": "Contraseña incorrecta."
+  }
+}

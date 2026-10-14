@@ -40,6 +40,6 @@ describe("templates", () => {
     const tpl = db.templates.find((t) => t.platform === "youtube")!;
     const draft = buildPostDraft(db.videos[3], "youtube", tpl, ["#Bioniche", "nature"]);
     expect(draft.hashtags).toEqual(["Bioniche", "nature", "bioniche", "shorts"]);
-    expect(draft.description).toContain("Subscribe to Bioniche");
+    expect(draft.description).toContain("Suscríbete a Bioniche");
   });
 });

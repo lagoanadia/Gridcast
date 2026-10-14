@@ -4,7 +4,7 @@ import { fmtDuration, PlatformPill, VideoStatusPill } from "@/components/Pills";
 import { PrintScene } from "@/components/PrintScene";
 import { Uploader } from "@/components/Uploader";
 import { getData } from "@/lib/data";
-import { t } from "@/lib/i18n";
+import { DATE_LOCALE, t } from "@/lib/i18n";
 import { PLATFORMS, VIDEO_STATUSES } from "@/lib/types";
 
 // Vercel functions reject request bodies over ~4.5 MB; direct-to-storage uploads arrive with Supabase (Phase 1b).
@@ -87,7 +87,7 @@ export default async function Library({ searchParams }: { searchParams: SP }) {
                 <Link href={`/videos/${v.id}`} className="title">{v.title}</Link>
                 {v.formatTags.length > 0 && <div className="row" style={{ gap: 4 }}>{v.formatTags.map((f) => <span key={f} className="pill tag">{f}</span>)}</div>}
                 {platforms.length > 0 && <div className="row" style={{ gap: 4 }}>{platforms.map((p) => <PlatformPill key={p} p={p} />)}</div>}
-                {v.expiresAt && <span className="small data" style={{ color: "var(--rust)" }}>{t("library.expires", { date: new Date(v.expiresAt).toLocaleDateString("en-GB") })}</span>}
+                {v.expiresAt && <span className="small data" style={{ color: "var(--rust)" }}>{t("library.expires", { date: new Date(v.expiresAt).toLocaleDateString(DATE_LOCALE) })}</span>}
                 {(v.status === "draft" || v.status === "ready") && (
                   <form action={setVideoStatusAction} style={{ marginTop: "auto" }}>
                     <input type="hidden" name="videoId" value={v.id} />

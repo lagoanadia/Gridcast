@@ -1,12 +1,16 @@
 import en from "../../messages/en.json";
+import es from "../../messages/es.json";
 
 /**
  * All user-facing text lives in messages/<locale>.json.
- * Adding Spanish = add messages/es.json and register it here.
+ * Spanish is the default; English is kept as a secondary dictionary (not all keys are translated back).
  */
-const LOCALES = { en } as const;
+const LOCALES = { es, en } as const;
 export type Locale = keyof typeof LOCALES;
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "es";
+
+/** BCP 47 tag used for every Intl date/time format in the UI. */
+export const DATE_LOCALE = "es-ES";
 
 type Dict = { [k: string]: string | Dict };
 

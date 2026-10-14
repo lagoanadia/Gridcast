@@ -1,4 +1,4 @@
-/** GridCast mark: a hand-cut linocut block — nine carved tiles, the centre one a rising sun. */
+/** GridCast mark: a rounded 3×3 grid of tiles, the centre one lit. */
 export const LOGO_TILES = [
   "M6.2 6.6 L16.4 5.8 L15.9 16.3 L6.6 15.8 Z",
   "M19.4 6.1 L29.1 6.5 L28.7 15.9 L19.1 16.4 Z",
@@ -14,21 +14,9 @@ export const LOGO_BLOCK = "M2.2 3.1 L45.6 1.6 L46.4 45.2 L1.4 46.3 Z";
 export function Logo({ size = 38 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <path d={LOGO_BLOCK} fill="#b4441f" />
-      {LOGO_TILES.map((d) => <path key={d} d={d} fill="#f5ecdb" />)}
-      <circle cx="24.1" cy="24.3" r="5.3" fill="#f0a033" />
-    </svg>
-  );
-}
-
-/** Shared SVG filter: slightly roughened edges, like ink squeezed onto paper. Rendered once in the root layout. */
-export function InkDefs() {
-  return (
-    <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
-      <filter id="ink-bleed">
-        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" />
-        <feDisplacementMap in="SourceGraphic" scale="2.2" />
-      </filter>
+      <path d={LOGO_BLOCK} fill="#6c47ff" />
+      {LOGO_TILES.map((d) => <path key={d} d={d} fill="#ffffff" />)}
+      <circle cx="24.1" cy="24.3" r="5.3" fill="#ffd166" />
     </svg>
   );
 }

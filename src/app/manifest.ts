@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "any",
-    background_color: "#eadcc0",
-    theme_color: "#4a1e10",
+    background_color: "#f7f6fb",
+    theme_color: "#6c47ff",
     categories: ["productivity", "social"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
@@ -19,8 +19,8 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Library", url: "/library", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Calendar", url: "/calendar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Crear", url: "/library", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Calendario", url: "/calendar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
     ],
   };
 }
