@@ -24,6 +24,9 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                     <span key={a.platform} className="row" style={{ gap: 4 }}>
                       <PlatformPill p={a.platform} />
                       <span className="muted">{a.connected ? a.handle : t("channels.notConnected")}</span>
+                      {a.platform === "youtube" && (
+                        <a className="btn sm" href={`/api/oauth/google/start?channelId=${c.id}`}>{a.connected ? t("channels.reconnect") : t("channels.connect")}</a>
+                      )}
                     </span>
                   ))}
                 </div>

@@ -155,7 +155,7 @@
     "autopilotHint": "Publicar lo que está en cola sin preguntarme antes.",
     "threshold": "Aviso de cola corta (días)",
     "accounts": "Cuentas conectadas",
-    "notConnected": "Sin conectar (fase 2)",
+    "notConnected": "Sin conectar",
     "templates": "Plantillas",
     "fixedHashtags": "Hashtags fijos",
     "footer": "Pie de la descripción",
@@ -164,7 +164,9 @@
     "madeForKids": "Contenido para niños",
     "playlist": "Id de la lista de reproducción",
     "tone": "Tono de voz",
-    "addChannel": "Añadir cuenta"
+    "addChannel": "Añadir cuenta",
+    "connect": "Conectar con Google",
+    "reconnect": "Volver a conectar"
   },
   "notifications": {
     "title": "Avisos",
