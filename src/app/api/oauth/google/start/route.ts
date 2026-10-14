@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getData } from "@/lib/data";
 import { appOrigin, buildAuthUrl, CALLBACK_PATH } from "@/lib/oauth/google";
 
-export const STATE_COOKIE = "gc_oauth_google";
+const STATE_COOKIE = "gc_oauth_google";
 
 /** Step 1: send the owner to Google's consent screen. The state (CSRF token + channel id) travels in a short-lived cookie. */
 export async function GET(req: Request) {

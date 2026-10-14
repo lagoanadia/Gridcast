@@ -1,22 +1,20 @@
-/** GridCast mark: a rounded 3×3 grid of tiles, the centre one lit. */
-export const LOGO_TILES = [
-  "M6.2 6.6 L16.4 5.8 L15.9 16.3 L6.6 15.8 Z",
-  "M19.4 6.1 L29.1 6.5 L28.7 15.9 L19.1 16.4 Z",
-  "M32.3 5.9 L42.2 6.4 L41.8 16.1 L32.6 15.7 Z",
-  "M5.9 19.3 L15.8 19.0 L16.2 28.8 L6.3 29.2 Z",
-  "M32.1 19.2 L42.1 18.8 L42.4 28.9 L32.4 29.0 Z",
-  "M6.4 32.2 L16.1 32.6 L15.7 42.3 L6.0 41.9 Z",
-  "M19.0 32.4 L28.9 32.0 L29.3 41.8 L19.3 42.4 Z",
-  "M32.5 32.1 L42.0 32.5 L42.3 42.1 L32.2 41.7 Z",
-];
-export const LOGO_BLOCK = "M2.2 3.1 L45.6 1.6 L46.4 45.2 L1.4 46.3 Z";
+/** GridCast mark: a rounded 3×3 grid of tiles, the centre one lit. Same geometry as public/brand/gridcast-logo.svg. */
+const TILE = 176, GAP = 36, OFFSET = 212;
 
 export function Logo({ size = 38 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <path d={LOGO_BLOCK} fill="#6c47ff" />
-      {LOGO_TILES.map((d) => <path key={d} d={d} fill="#ffffff" />)}
-      <circle cx="24.1" cy="24.3" r="5.3" fill="#ffd166" />
+    <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden="true">
+      <defs>
+        <linearGradient id="gc-logo-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8A6CFF" />
+          <stop offset="1" stopColor="#5632E8" />
+        </linearGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="url(#gc-logo-grad)" />
+      {Array.from({ length: 9 }, (_, i) => {
+        const r = Math.floor(i / 3), c = i % 3;
+        return <rect key={i} x={OFFSET + c * (TILE + GAP)} y={OFFSET + r * (TILE + GAP)} width={TILE} height={TILE} rx="44" fill={i === 4 ? "#FFD166" : "#FFFFFF"} opacity={i === 4 ? 1 : 0.96} />;
+      })}
     </svg>
   );
 }
