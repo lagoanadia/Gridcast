@@ -2,7 +2,15 @@ import { createReadStream, statSync } from "node:fs";
 import { Readable } from "node:stream";
 import { currentUserId, loadDb } from "@/lib/store";
 
-/** Streams a video file with HTTP range support (needed for seeking in <video>). */
+const IMAGE_TYPES: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", heic: "image/heic", avif: "image/avif" };
+
+function mimeOf(fileName: string | undefined, mediaType: string | undefined) {
+  const ext = fileName?.toLowerCase().split(".").pop() ?? "";
+  if (mediaType === "image") return IMAGE_TYPES[ext] ?? "image/jpeg";
+  return ext === "mov" ? "video/quicktime" : "video/mp4";
+}
+
+/** Streams a stored video or photo with HTTP range support (needed for seeking in <video>). */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const video = loadDb().videos.find((v) => v.id === id && v.userId === currentUserId());
@@ -10,7 +18,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   let size: number;
   try { size = statSync(video.filePath).size; } catch { return new Response("Not found", { status: 404 }); }
-  const type = video.fileName?.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4";
+  const type = mimeOf(video.fileName, video.mediaType);
   const range = req.headers.get("range")?.match(/bytes=(\d*)-(\d*)/);
 
   if (range) {

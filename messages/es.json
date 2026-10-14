@@ -121,7 +121,9 @@
     "titleLength": "Título demasiado largo: {actual}/{max}.",
     "descriptionLength": "Texto demasiado largo: {actual}/{max}.",
     "hashtags": "Demasiados hashtags: {actual} (máximo {max}).",
-    "expired": "Está programado para después de que el contenido deje de estar vigente."
+    "expired": "Está programado para después de que el contenido deje de estar vigente.",
+    "imageUnsupported": "YouTube Shorts solo admite vídeo.",
+    "aspectImage": "La foto tiene que estar entre 4:5 y 1,91:1 ({w}×{h})."
   },
   "calendar": {
     "title": "Calendario",
@@ -189,5 +191,96 @@
     "password": "Contraseña",
     "signIn": "Entrar",
     "wrong": "Contraseña incorrecta."
+  },
+  "create": {
+    "title": "Nueva publicación",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "saveDraft": "Guardar borrador",
+    "schedule": "Programar",
+    "publishNow": "Publicar ahora",
+    "sending": "Enviando…",
+    "stepOf": "Paso {n} de {total}",
+    "steps": [
+      "Contenido",
+      "Texto",
+      "Dónde",
+      "Cuándo",
+      "Resumen"
+    ],
+    "content": {
+      "title": "¿Qué vas a publicar?",
+      "hint": "Arrastra aquí una foto o un vídeo, o elige un archivo.",
+      "pick": "Elegir archivo",
+      "change": "Cambiar archivo",
+      "tooLarge": "El archivo pesa más de {mb} MB y este despliegue todavía no lo admite.",
+      "unsupported": "Solo se admiten fotos y vídeos.",
+      "photo": "Foto",
+      "video": "Vídeo",
+      "details": "{w}×{h}",
+      "helpTitle": "¿Todavía no tienes la imagen?",
+      "helpIntro": "Cuéntame la idea y te preparo un texto para pegar en tu generador de imágenes.",
+      "idea": "¿Qué quieres que salga en la foto?",
+      "ideaPlaceholder": "Por ejemplo: alumnos trabajando en el laboratorio",
+      "style": "Estilo",
+      "format": "Formato",
+      "prompt": "Tu prompt",
+      "copy": "Copiar prompt",
+      "copied": "¡Copiado!"
+    },
+    "text": {
+      "title": "Escribe el texto",
+      "name": "Título",
+      "nameHint": "Para tu referencia. YouTube lo usa como título del vídeo.",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Lo que se verá debajo de la foto o del vídeo",
+      "hashtags": "Hashtags",
+      "hashtagAdd": "Añadir hashtag",
+      "hashtagPlaceholder": "escribe y pulsa Intro",
+      "ai": "Sugerir con IA (próximamente)"
+    },
+    "where": {
+      "title": "¿Dónde lo publicamos?",
+      "account": "Cuenta",
+      "networks": "Redes",
+      "notConnected": "Sin conectar",
+      "problems": "Hay que arreglar esto antes de continuar",
+      "ok": "Todo en orden",
+      "none": "Elige al menos una red."
+    },
+    "when": {
+      "title": "¿Cuándo sale?",
+      "now": "Ahora",
+      "nowHint": "Se publica en cuanto lo confirmes.",
+      "at": "Elegir día y hora",
+      "atHint": "Hora de {tz}.",
+      "next": "Siguiente hueco libre",
+      "nextHint": "Según la frecuencia de la cuenta.",
+      "date": "Fecha y hora"
+    },
+    "summary": {
+      "title": "Revisa y confirma",
+      "file": "Archivo",
+      "text": "Texto",
+      "networks": "Redes",
+      "when": "Cuándo",
+      "draft": "Se guardará como borrador, sin fecha.",
+      "none": "Sin texto"
+    },
+    "done": {
+      "scheduled": "Programada en {n} red(es).",
+      "now": "Publicada ahora (modo de prueba).",
+      "draft": "Guardada como borrador."
+    },
+    "error": {
+      "no_file": "Falta el archivo.",
+      "not_found": "No se ha encontrado la cuenta.",
+      "no_platforms": "Elige al menos una red.",
+      "no_time": "Elige cuándo se publica.",
+      "past": "Esa fecha ya ha pasado.",
+      "no_slot": "La cuenta no tiene reglas de cola con huecos libres. Elige un día y hora.",
+      "invalid": "Hay cosas que arreglar antes de programar.",
+      "network": "No se ha podido enviar. Inténtalo de nuevo."
+    }
   }
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { setVideoStatusAction } from "@/app/actions";
 import { fmtDuration, PlatformPill, VideoStatusPill } from "@/components/Pills";
-import { PrintScene } from "@/components/PrintScene";
+import { MediaThumb } from "@/components/Media";
 import { Uploader } from "@/components/Uploader";
 import { getData } from "@/lib/data";
 import { DATE_LOCALE, t } from "@/lib/i18n";
@@ -69,14 +69,13 @@ export default async function Library({ searchParams }: { searchParams: SP }) {
         {videos.map((v) => {
           const channel = db.channels.find((c) => c.id === v.channelId);
           const platforms = Array.from(new Set(db.posts.filter((p) => p.videoId === v.id && p.status !== "cancelled").map((p) => p.platform)));
-          const real = v.filePath && !v.filePath.startsWith("demo://");
           return (
             <article key={v.id} className="stamp">
               <Link href={`/videos/${v.id}`} className="thumb" aria-label={v.title}>
-                <span className="denom">{fmtDuration(v.durationSec)}</span>
+                <span className="denom">{v.mediaType === "image" ? t("create.content.photo") : fmtDuration(v.durationSec)}</span>
                 <span className="dur"><span className="dot" style={{ background: channel?.color }} /></span>
                 <span className="window">
-                  {real ? <video src={`/api/media/${v.id}#t=0.5`} preload="metadata" muted /> : <PrintScene seed={v.id} />}
+                  <MediaThumb video={v} />
                 </span>
               </Link>
               <div className="body">

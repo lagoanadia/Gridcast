@@ -49,8 +49,12 @@ export interface Template extends Owned {
   toneOfVoice: string;
 }
 
+export type MediaType = "video" | "image";
+
 export interface Video extends Owned {
   channelId: string;
+  /** Missing on older rows: treated as "video". */
+  mediaType?: MediaType;
   title: string;
   description: string;
   fileName?: string;

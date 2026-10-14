@@ -63,21 +63,34 @@ export function validatePost(post: Post, video: Video): ValidationIssue[] {
   const lim = PLATFORM_LIMITS[post.platform];
   const issues: ValidationIssue[] = [];
 
+  const isImage = video.mediaType === "image";
+
+  if (isImage && post.platform === "youtube") {
+    issues.push({ field: "file", severity: "error", messageKey: "validation.imageUnsupported" });
+  }
+
   if (video.width && video.height) {
     const ratio = video.width / video.height;
-    if (Math.abs(ratio - 9 / 16) > 0.02) {
+    if (isImage) {
+      // Instagram feed photos: from 4:5 (portrait) to 1.91:1 (landscape).
+      if (ratio < 0.8 - 0.01 || ratio > 1.91 + 0.01) {
+        issues.push({ field: "aspect", severity: "error", messageKey: "validation.aspectImage", params: { w: video.width, h: video.height } });
+      }
+    } else if (Math.abs(ratio - 9 / 16) > 0.02) {
       issues.push({ field: "aspect", severity: "error", messageKey: "validation.aspect", params: { w: video.width, h: video.height } });
     }
   } else {
     issues.push({ field: "aspect", severity: "warning", messageKey: "validation.aspectUnknown" });
   }
 
-  if (video.durationSec !== undefined) {
-    if (video.durationSec > lim.maxDurationSec) {
-      issues.push({ field: "duration", severity: "error", messageKey: "validation.duration", params: { max: lim.maxDurationSec, actual: Math.round(video.durationSec) } });
+  if (!isImage) {
+    if (video.durationSec !== undefined) {
+      if (video.durationSec > lim.maxDurationSec) {
+        issues.push({ field: "duration", severity: "error", messageKey: "validation.duration", params: { max: lim.maxDurationSec, actual: Math.round(video.durationSec) } });
+      }
+    } else {
+      issues.push({ field: "duration", severity: "warning", messageKey: "validation.durationUnknown" });
     }
-  } else {
-    issues.push({ field: "duration", severity: "warning", messageKey: "validation.durationUnknown" });
   }
 
   if (!video.filePath) {

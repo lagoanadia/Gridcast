@@ -2,12 +2,12 @@ import Link from "next/link";
 import { approveAllAction, fillQueueAction, retryVideoAction, runDueAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
 import { fmtDateTime } from "@/components/Pills";
-import { PrintScene } from "@/components/PrintScene";
+import { MediaThumb } from "@/components/Media";
 import { CONTENT_FOLDER_LABEL } from "@/config";
 import { getData, isDryRun } from "@/lib/data";
 import { DATE_LOCALE, t } from "@/lib/i18n";
 import { queueDaysLeft } from "@/lib/scheduler";
-import type { Channel, Database, Platform, Post, Video } from "@/lib/types";
+import type { Channel, Database, Platform, Post } from "@/lib/types";
 
 type SP = Promise<{ msg?: string; err?: string }>;
 type CardStatus = "draft" | "scheduled" | "published" | "error";
@@ -50,11 +50,6 @@ function nextPublication(db: Database, now: Date) {
 const Icon = ({ d, size }: { d: React.ReactNode; size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">{d}</svg>
 );
-
-function Thumb({ video }: { video: Video }) {
-  const real = video.filePath && !video.filePath.startsWith("demo://");
-  return real ? <video src={`/api/media/${video.id}#t=0.5`} preload="metadata" muted /> : <PrintScene seed={video.id} />;
-}
 
 function ContentBar({ channel, days, showName }: { channel: Channel; days: number | null; showName: boolean }) {
   const low = days !== null && days < channel.lowQueueThresholdDays;
@@ -105,7 +100,7 @@ export default async function Today({ searchParams }: { searchParams: SP }) {
           {shown.map(({ video, posts, status, when, channel }) => (
             <div key={video.id} className={`post-card ${status === "error" ? "is-error" : ""}`}>
               <div className="post-thumb">
-                <Link href={`/videos/${video.id}`} aria-label={video.title} style={{ display: "block", height: "100%" }}><Thumb video={video} /></Link>
+                <Link href={`/videos/${video.id}`} aria-label={video.title} style={{ display: "block", height: "100%" }}><MediaThumb video={video} /></Link>
                 <span className={`pill status ${status}`}>{t(`today.status.${status}`)}</span>
                 {status === "error" && (
                   <form action={retryVideoAction} className="retry-form">
@@ -127,7 +122,7 @@ export default async function Today({ searchParams }: { searchParams: SP }) {
       )}
 
       <div className="add-wrap">
-        <Link href="/library" className="add-btn" aria-label={t("today.newPost")}>
+        <Link href="/create" className="add-btn" aria-label={t("today.newPost")}>
           <Icon d={<path d="M12 5v14M5 12h14" />} />
           <span>{t("today.newPost")}</span>
         </Link>

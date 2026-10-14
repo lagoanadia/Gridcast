@@ -5,7 +5,7 @@ import { ConfirmButton } from "@/components/ConfirmButton";
 import { Flash } from "@/components/Flash";
 import { fmtDuration, PlatformPill, PostStatusPill, VideoStatusPill } from "@/components/Pills";
 import { PostEditor } from "@/components/PostEditor";
-import { PrintScene } from "@/components/PrintScene";
+import { MediaPlayer } from "@/components/Media";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";
 import { hasErrors, PLATFORM_LIMITS, validatePost } from "@/lib/platforms";
@@ -58,7 +58,7 @@ export default async function VideoPage({ params, searchParams }: { params: Prom
 
       <div className="detail">
         <div className="stack">
-          {real ? <video className="player" src={`/api/media/${video.id}`} controls preload="metadata" /> : <div className="player-ph" title={t("video.noFile")}><PrintScene seed={video.id} /></div>}
+          <MediaPlayer video={video} emptyLabel={t("video.noFile")} />
           <div className="card flat small">
             <h3>{t("video.transcript")}</h3>
             <p className="muted" style={{ marginBottom: 0 }}>{video.transcript ?? t("video.transcriptSoon")}</p>

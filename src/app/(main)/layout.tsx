@@ -10,10 +10,9 @@ export const dynamic = "force-dynamic";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { db } = getData();
   const unread = db.notifications.filter((n) => !n.read).length;
-  // "Crear" points at the library until the creation wizard exists.
   const items: NavItem[] = [
     { href: "/", label: t("nav.today"), icon: "today" },
-    { href: "/library", label: t("nav.create"), icon: "create", also: ["/videos"] },
+    { href: "/create", label: t("nav.create"), icon: "create" },
     { href: "/calendar", label: t("nav.calendar"), icon: "calendar" },
     { href: "/channels", label: t("nav.accounts"), icon: "accounts", also: ["/queue"] },
   ];
@@ -30,6 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <Nav items={items} unread={unread} />
         <div className="sidebar-foot">
           <div className="more">
+            <Link href="/library">{t("nav.library")}</Link>
             <Link href="/queue">{t("nav.queue")}</Link>
             <Link href="/notifications">{t("nav.notifications")}{unread > 0 ? ` (${unread})` : ""}</Link>
           </div>
