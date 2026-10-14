@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { encryptToken } from "@/lib/crypto";
 import { appOrigin, CALLBACK_PATH, exchangeCode, fetchChannelHandle } from "@/lib/oauth/google";
-import { currentUserId, mutate } from "@/lib/store";
+import { currentUserId } from "@/lib/current-user";
+import { mutate } from "@/lib/store";
 import { safeEqual } from "@/lib/safeEqual";
 
 const STATE_COOKIE = "gc_oauth_google";
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
   let encrypted: string;
   try { encrypted = encryptToken(JSON.stringify(tokens)); } catch { return back("err", "Falta TOKEN_ENCRYPTION_KEY en este servidor, así que no puedo guardar la conexión de forma segura."); }
 
-  const uid = currentUserId();
+  const uid = await currentUserId();
   const saved = await mutate((db) => {
     const channel = db.channels.find((c) => c.id === channelId && c.userId === uid);
     if (!channel) return false;

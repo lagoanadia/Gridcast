@@ -1,4 +1,5 @@
 import { CreateWizard } from "@/components/CreateWizard";
+import { Welcome } from "@/components/Welcome";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";
 import { availability, publisherMode } from "@/lib/publisher";
@@ -10,6 +11,7 @@ import { mediaStorageEnabled } from "@/lib/media-storage";
 
 export default async function Create() {
   const { db } = await getData();
+  if (db.channels.length === 0) return <Welcome />;
   const mode = publisherMode();
   const channels = db.channels.map((c) => ({
     id: c.id, name: c.name, timezone: c.timezone, slug: c.slug,

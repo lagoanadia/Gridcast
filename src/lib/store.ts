@@ -16,10 +16,11 @@ export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 
 export const emptyDb = (): Database => ({
-  channels: [], templates: [], videos: [], posts: [], queueRules: [], metrics: [], notifications: [],
+  users: [], channels: [], templates: [], videos: [], posts: [], queueRules: [], metrics: [], notifications: [],
 });
 
-export function currentUserId(): string {
+/** The single user of a local, login-less run. Real users get their own id from their Google account. */
+export function devUserId(): string {
   return process.env.GRIDCAST_DEV_USER_ID ?? "00000000-0000-0000-0000-000000000001";
 }
 
@@ -77,6 +78,7 @@ export function mutate<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
 export function scoped(db: Database, userId: string): Database {
   const own = <T extends { userId: string }>(rows: T[]) => rows.filter((r) => r.userId === userId);
   return {
+    users: [], // other people's profiles are never exposed
     channels: own(db.channels), templates: own(db.templates), videos: own(db.videos), posts: own(db.posts),
     queueRules: own(db.queueRules), metrics: own(db.metrics), notifications: own(db.notifications),
   };

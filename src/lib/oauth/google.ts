@@ -4,8 +4,9 @@ export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/youtube.readonly", // read the channel's name
 ];
 
-const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-const TOKEN_URL = "https://oauth2.googleapis.com/token";
+// Endpoints can be pointed at a local fake Google in end-to-end tests; in production the defaults are used.
+const authUrl = () => process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth";
+const tokenUrl = () => process.env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token";
 const CHANNEL_URL = "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true";
 
 export const CALLBACK_PATH = "/api/oauth/google/callback";
@@ -23,7 +24,7 @@ export function buildAuthUrl(args: { clientId: string; redirectUri: string; stat
     include_granted_scopes: "true",
     state: args.state,
   });
-  return `${AUTH_URL}?${q}`;
+  return `${authUrl()}?${q}`;
 }
 
 export async function exchangeCode(
@@ -31,7 +32,7 @@ export async function exchangeCode(
   fetchImpl: typeof fetch = fetch,
   now = new Date(),
 ): Promise<StoredGoogleTokens | null> {
-  const res = await fetchImpl(TOKEN_URL, {
+  const res = await fetchImpl(tokenUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({

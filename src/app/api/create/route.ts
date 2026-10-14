@@ -6,7 +6,8 @@ import { mediaUrlFor } from "@/lib/media";
 import { mediaStorageEnabled, objectExists, publicUrlFor, removeObject } from "@/lib/media-storage";
 import { availability, getPublisher } from "@/lib/publisher";
 import { runDuePublishes } from "@/lib/services";
-import { currentUserId, loadDb, mutate, newId } from "@/lib/store";
+import { currentUserId } from "@/lib/current-user";
+import { loadDb, mutate, newId } from "@/lib/store";
 import { PLATFORMS, type MediaType, type Platform, type Video } from "@/lib/types";
 import { mediaTypeOf, parseMeta, storeUpload, videoFromCloudUpload } from "@/lib/uploads";
 
@@ -20,7 +21,7 @@ const fail = (reason: string) => NextResponse.json({ ok: false, reason }, { stat
  */
 export async function POST(req: Request) {
   const form = await req.formData();
-  const userId = currentUserId();
+  const userId = await currentUserId();
   const channelId = String(form.get("channelId") ?? "");
   const mode = String(form.get("mode") ?? "") as WhenMode;
   if (!MODES.includes(mode)) return fail("no_time");

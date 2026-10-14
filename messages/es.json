@@ -173,7 +173,8 @@
     "instagramToken": "Pega aquí el token de Instagram",
     "connectShort": "Conectar",
     "soon": "Publicar aquí llegará pronto",
-    "connectionsHint": "Instagram se conecta con un token de tu cuenta profesional (lo genera Meta en el panel de tu app). Se guarda cifrado."
+    "connectionsHint": "Instagram se conecta con un token de tu cuenta profesional (lo genera Meta en el panel de tu app). Se guarda cifrado.",
+    "session": "Sesión"
   },
   "notifications": {
     "title": "Avisos",
@@ -197,9 +198,21 @@
     "ephemeral": "Versión de prueba: los datos son temporales y se borran. Conecta Supabase para conservarlos."
   },
   "auth": {
-    "password": "Contraseña",
-    "signIn": "Entrar",
-    "wrong": "Contraseña incorrecta."
+    "tagline": "Programa tus publicaciones en un solo sitio.",
+    "google": "Continuar con Google",
+    "notConfigured": "El inicio de sesión todavía no está configurado en este servidor.",
+    "privacy": "Solo usamos tu cuenta de Google para saber quién eres. Cada persona ve únicamente lo suyo.",
+    "signOut": "Salir",
+    "signedInAs": "Sesión de",
+    "error": {
+      "denied": "Has cancelado el inicio de sesión.",
+      "state": "El inicio de sesión ha caducado. Inténtalo de nuevo.",
+      "google": "Google no ha aceptado el inicio de sesión. Inténtalo de nuevo.",
+      "unverified": "Tu correo de Google no está verificado.",
+      "forbidden": "Esta cuenta de Google no tiene acceso a este Gridcast.",
+      "config": "El inicio de sesión no está configurado en este servidor."
+    },
+    "openAccess": "Acceso abierto: cualquiera con la dirección puede entrar. Configura el inicio de sesión con Google (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET y SESSION_SECRET)."
   },
   "create": {
     "title": "Nueva publicación",
@@ -310,5 +323,13 @@
       "upload_failed": "No se ha podido subir el archivo.",
       "platform_unavailable": "Alguna de las redes elegidas todavía no se puede publicar desde Gridcast."
     }
+  },
+  "welcome": {
+    "title": "Te damos la bienvenida a Gridcast",
+    "titleNamed": "Hola, {name}",
+    "body": "Aquí vas a programar tus publicaciones. Empieza creando tu primera cuenta: puede ser tu marca, tu proyecto o tu propio nombre.",
+    "placeholder": "Nombre de tu cuenta",
+    "button": "Crear mi cuenta",
+    "hint": "Después conectarás Instagram y el resto de redes desde Cuentas."
   }
 }

@@ -1,8 +1,8 @@
-import { newId } from "./store";
-import type { Channel, Database, Platform, Post, QueueRule, Template, Video } from "./types";
+import { newId } from "@/lib/store";
+import type { Channel, Database, Platform, Post, QueueRule, Template, Video } from "@/lib/types";
 
-/** Creates the owner's two channels, templates and queue rules, plus a few demo videos. */
-export function seedDb(db: Database, userId: string, now = new Date(), withDemo = true, demoPosts = false) {
+/** Test fixture only: two channels with templates, queue rules and a few videos. The app itself never creates sample data. */
+export function seedFixture(db: Database, userId: string, now = new Date(), withDemo = true, demoPosts = false) {
   if (db.channels.some((c) => c.userId === userId)) return false;
   const at = now.toISOString();
   const tz = "Europe/Madrid"; // TODO(owner): confirm each channel's time zone

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { currentUserId, mutate } from "@/lib/store";
+import { currentUserId } from "@/lib/current-user";
+import { mutate } from "@/lib/store";
 import { mediaTypeOf, parseMeta, storeUpload } from "@/lib/uploads";
 
 /**
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
   const mediaType = file instanceof File ? mediaTypeOf(file) : null;
   if (!(file instanceof File) || !mediaType) return NextResponse.json({ error: "video or image file required" }, { status: 400 });
 
-  const userId = currentUserId();
+  const userId = await currentUserId();
   const video = await storeUpload(file, mediaType, userId, channelId, parseMeta(form.get("meta")));
   const ok = await mutate((db) => {
     if (!db.channels.some((c) => c.id === channelId && c.userId === userId)) return false;

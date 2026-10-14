@@ -126,7 +126,19 @@ export interface Notification extends Owned {
   read: boolean;
 }
 
+/** A person who signed in with Google. */
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+  createdAt: string;
+  lastLoginAt: string;
+}
+
 export interface Database {
+  /** Everyone who has signed in; not scoped per user. */
+  users: User[];
   channels: Channel[];
   templates: Template[];
   videos: Video[];

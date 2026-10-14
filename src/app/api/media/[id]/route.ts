@@ -1,6 +1,7 @@
 import { createReadStream, statSync } from "node:fs";
 import { Readable } from "node:stream";
-import { currentUserId, loadDb } from "@/lib/store";
+import { currentUserId } from "@/lib/current-user";
+import { loadDb } from "@/lib/store";
 
 const IMAGE_TYPES: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", heic: "image/heic", avif: "image/avif" };
 
@@ -13,7 +14,8 @@ function mimeOf(fileName: string | undefined, mediaType: string | undefined) {
 /** Streams a stored video or photo with HTTP range support (needed for seeking in <video>). */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const video = (await loadDb()).videos.find((v) => v.id === id && v.userId === currentUserId());
+  const uid = await currentUserId();
+  const video = (await loadDb()).videos.find((v) => v.id === id && v.userId === uid);
   if (video?.mediaUrl) return Response.redirect(video.mediaUrl, 302);
   if (!video?.filePath || video.filePath.startsWith("demo://")) return new Response("Not found", { status: 404 });
 

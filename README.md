@@ -13,7 +13,7 @@ npm run dev                  # http://localhost:3000
 npm test                     # unit tests (scheduler, validation, retries, encryption)
 ```
 
-On first load, the app seeds the **Bioniche** and **Pepito Alerta** channels with templates, queue rules and six demo videos (tagged `demo`). To start empty, delete `.data/` and run `npm run seed -- --no-demo`.
+The app never creates sample data: every person starts empty and creates their own accounts. Locally there is no login (everything belongs to one development user). With Google login configured (below), each person signs in and sees only their own accounts, content and connections.
 
 ### Try the whole flow
 1. **Library**: pick a channel and drop in some vertical videos (several at once is fine). The app reads duration and dimensions in the browser and falls back to `ffprobe` on the server when it's installed. New uploads start as **Draft**. Click **Mark ready**.
@@ -28,6 +28,15 @@ On first load, the app seeds the **Bioniche** and **Pepito Alerta** channels wit
 GridCast is an installable PWA. In Chrome or Edge on desktop or Android, use the **Install app** button (bottom-right) or the install icon in the address bar. On iPhone, open the site in Safari, then Share → **Add to Home Screen**.
 - The service worker (`public/sw.js`) caches static assets and the pages you visit, so the app opens fast and still shows recent pages when you're offline. If a page isn't cached, you get an offline screen.
 - Anything that changes data (uploads, approvals, publishing, `/api/*`) always goes to the server and is never cached.
+
+## Sign in with Google (one Gridcast per person)
+
+Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `SESSION_SECRET` (any long random string; `TOKEN_ENCRYPTION_KEY` is used if it is missing). Login turns on as soon as all three exist; without them the app is open, which is how local development runs.
+- In Google Cloud Console → Credentials → your OAuth client, add these **authorized redirect URIs** (replace the domain): `https://YOUR-DOMAIN/api/auth/google/callback` (sign-in) and `https://YOUR-DOMAIN/api/oauth/google/callback` (YouTube connection). Add `http://localhost:3000/...` versions for local tests.
+- OAuth consent screen: set the publishing status to **In production**, otherwise only the test users you list can sign in. Plain sign-in (openid, email, profile) needs no Google verification.
+- Optional `ALLOWED_EMAILS` (comma separated) restricts who can create a Gridcast; leave it empty to let any Google account in.
+- Each person's rows carry their own user id (derived from their Google account id). Pages, actions and APIs only ever read and write rows of the signed-in user; the scheduler tick works across everyone because it has its own secret.
+- Public without a session: `/login`, `/api/auth/*`, `/api/cron/*` (its own secret), PWA assets and TikTok's verification file.
 
 ## Go live (use it for real)
 

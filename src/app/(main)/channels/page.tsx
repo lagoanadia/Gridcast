@@ -1,6 +1,8 @@
 import { addChannelAction, connectInstagramAction, disconnectAccountAction, updateChannelAction, upsertTemplateAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
+import { currentUser } from "@/lib/current-user";
 import { PlatformPill } from "@/components/Pills";
+import { TimezoneField } from "@/components/TimezoneField";
 import { getData } from "@/lib/data";
 import { t } from "@/lib/i18n";
 import { PLATFORMS } from "@/lib/types";
@@ -8,10 +10,17 @@ import { PLATFORMS } from "@/lib/types";
 export default async function ChannelsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const sp = await searchParams;
   const { db } = await getData();
+  const user = await currentUser();
   return (
     <>
       <div className="page-head"><h1>{t("channels.title")}</h1></div>
       <Flash sp={sp} />
+      {user && (
+        <div className="card spread" style={{ marginBottom: 20 }}>
+          <span className="small muted">{t("auth.signedInAs")} <strong style={{ color: "var(--ink)" }}>{user.email}</strong></span>
+          <form action="/api/auth/logout" method="post"><button className="btn sm">{t("auth.signOut")}</button></form>
+        </div>
+      )}
       <div className="stack" style={{ gap: 30 }}>
         {db.channels.map((c) => (
           <section key={c.id} className="stack">
@@ -97,6 +106,7 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
           </section>
         ))}
         <form action={addChannelAction} className="card flat row">
+          <TimezoneField />
           <input type="text" name="name" placeholder={t("channels.name")} style={{ maxWidth: 260 }} required />
           <button className="btn">{t("channels.addChannel")}</button>
         </form>

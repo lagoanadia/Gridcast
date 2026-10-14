@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { approveAllAction, fillQueueAction, retryVideoAction, runDueAction } from "@/app/actions";
 import { Flash } from "@/components/Flash";
+import { Welcome } from "@/components/Welcome";
+import { currentUser } from "@/lib/current-user";
 import { fmtDateTime } from "@/components/Pills";
 import { MediaThumb } from "@/components/Media";
 import { getData, isDryRun } from "@/lib/data";
@@ -69,6 +71,7 @@ function ContentBar({ channel, days, showName }: { channel: Channel; days: numbe
 export default async function Today({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const { db } = await getData();
+  if (db.channels.length === 0) return <Welcome name={(await currentUser())?.name.split(" ")[0]} />;
   const now = new Date();
   const cards = buildCards(db, now);
   const shown = cards.slice(0, MAX_CARDS);
