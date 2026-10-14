@@ -63,7 +63,7 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                       ) : (
                         <form action={connectInstagramAction} className="row" style={{ flex: 1, justifyContent: "flex-end" }}>
                           <input type="hidden" name="channelId" value={c.id} />
-                          <input type="password" name="token" autoComplete="off" placeholder={t("channels.instagramToken")} style={{ maxWidth: 360 }} aria-label={t("channels.instagramToken")} />
+                          <input type="text" name="token" autoComplete="off" data-1p-ignore data-lpignore="true" style={{ WebkitTextSecurity: "disc", maxWidth: 360 } as React.CSSProperties} placeholder={t("channels.instagramToken")} aria-label={t("channels.instagramToken")} />
                           <button className="btn sm primary">{t("channels.connectShort")}</button>
                         </form>
                       )
